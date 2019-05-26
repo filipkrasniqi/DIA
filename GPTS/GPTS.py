@@ -18,7 +18,7 @@ n_experiments = 100
 gpts_rewards_per_experiment = []
 
 for e in range(0, n_experiments):
-    env = Bidding_Environment(daily_budgets=daily_budget, sigma=sigma)
+    env = Environment(daily_budgets=daily_budget, sigma=sigma)
     gpts_learner = GPTS_Learner(n_arms=n_arms, arms=daily_budget)
 
     for t in range(0, T):
@@ -35,3 +35,5 @@ plt.ylabel("Regret")
 plt.plot(np.cumsum(np.mean(opt - gpts_rewards_per_experiment, axis=0)), 'g')  # Green color for GPTS
 plt.legend(["GPTS"])
 plt.show()
+
+
