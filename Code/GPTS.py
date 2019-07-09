@@ -14,7 +14,7 @@ sigma = 10
 
 T = 40
 
-n_experiments = 100
+n_experiments = 10
 gpts_rewards_per_experiment = []
 
 for e in range(0, n_experiments):
