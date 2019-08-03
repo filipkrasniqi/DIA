@@ -18,14 +18,12 @@ class Subcampaign:
             return self.number_of_clicks[x]
 
 class DPAlgorithm:
-    def __init__(self, arms, n_subcampaigns, num_clicks, min_budgets, max_budgets):
+    def __init__(self, arms, n_subcampaigns, num_clicks, min_budget, max_budget):
         self.arms = arms
         self.n_subcampaigns = n_subcampaigns
         self.num_clicks = num_clicks
-        self.min_budgets = min_budgets
-        self.max_budgets = max_budgets
-
-        assert len(min_budgets) == n_subcampaigns and len(max_budgets) == n_subcampaigns
+        self.min_budgets = [min_budget for _ in range(0, n_subcampaigns)]
+        self.max_budgets = [max_budget for _ in range(0, n_subcampaigns)]
 
         self.campaigns = []
         for i, (min_budget, max_budget, num_click) in enumerate(zip(self.min_budgets, self.max_budgets, self.num_clicks)):
