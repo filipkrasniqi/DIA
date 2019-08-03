@@ -78,7 +78,7 @@ class Subcampaign:
         return y
 
     def get_clicks_noise(self, x_value):
-        return np.random.normal(self.get_clicks_real(x_value), self.sigma)
+        return max(0, np.random.normal(self.get_clicks_real(x_value), self.sigma))
 
     def plot(self):
         for u in range(0, self.n_users):
@@ -122,8 +122,17 @@ class Environment:
     def get_clicks_real(self, x_value, subc):
         return self.subcampaigns[subc].get_clicks_real(x_value)
 
-    def get_clicks_noise(self, x_value, subc):
+    def get_click_noise(self, x_value, subc):
         return self.subcampaigns[subc].get_clicks_noise(x_value)
+
+    def get_clicks_noise(self, x_value):
+        #click = []
+        #for i,val in enumerate(x_value):
+        #    click.append(self.get_click_noise(val,i))
+
+        #return click
+
+        return [self.get_click_noise(val,i) for i,val in enumerate(x_value)]
 
     def plot(self):
         for s in range(0, self.n_subcampaigns):
