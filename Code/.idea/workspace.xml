@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d2e5fd7f-27ef-4158-9c97-de883713a765" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/Part_3/Comb_GPTS.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Part_3/Comb_GPTS_Learner.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../Part 3/DP algorithm.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/../Part 3/DP algorithm.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Part_3/Comb_GPTS.py" beforeDir="false" afterPath="$PROJECT_DIR$/Part_3/Comb_GPTS.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -15,13 +12,72 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/Part_3/Comb_GPTS.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="199">
-              <caret line="33" column="4" lean-forward="true" selection-start-line="33" selection-start-column="4" selection-end-line="33" selection-end-column="4" />
+            <state relative-caret-position="624">
+              <caret line="71" column="19" selection-start-line="71" selection-start-column="19" selection-end-line="71" selection-end-column="19" />
               <folding>
-                <element signature="e#42#75#0" expanded="true" />
+                <element signature="e#0#33#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/../../../Tesi/Gaussian-MAB/Algorithms/Comparisons/Old_Comparisons/GPMI_GPTS.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="250">
+              <caret line="60" lean-forward="true" selection-start-line="60" selection-end-line="65" selection-end-column="39" />
+              <folding>
+                <element signature="e#0#31#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Part_3/Environment.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="216">
+              <caret line="27" column="39" lean-forward="true" selection-start-line="27" selection-start-column="39" selection-end-line="27" selection-end-column="39" />
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Part_3/dp_algorithm.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-561">
+              <folding>
+                <element signature="e#0#18#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/Part_3/GPTS_Learner.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="85">
+              <caret line="5" selection-start-line="5" selection-end-line="5" />
+              <folding>
+                <element signature="e#0#34#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Part_3/GPTS_with_error.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="301">
+              <caret line="32" column="70" lean-forward="true" selection-start-line="32" selection-start-column="4" selection-end-line="32" selection-end-column="70" />
+              <folding>
+                <element signature="e#31#64#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -50,6 +106,7 @@
         <option value="$PROJECT_DIR$/Part_3/Environment.py" />
         <option value="$PROJECT_DIR$/Part_3/Comb_GPTS_Learner.py" />
         <option value="$PROJECT_DIR$/Part_3/Comb_GPTS.py" />
+        <option value="$PROJECT_DIR$/Part_3/GPTS_Learner.py" />
       </list>
     </option>
   </component>
@@ -151,12 +208,12 @@
       <workItem from="1562692541955" duration="323000" />
       <workItem from="1562692890078" duration="9000" />
       <workItem from="1564822928637" duration="3232000" />
-      <workItem from="1564833380889" duration="2909000" />
+      <workItem from="1564833380889" duration="8552000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="6549000" />
+    <option name="totallyTimeSpent" value="12192000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-6" y="-6" width="1293" height="733" extended-state="6" />
@@ -226,16 +283,6 @@
     <entry file="file://$PROJECT_DIR$/Part_1/Learner.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/Part_3/Environment.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="68">
-          <caret line="4" column="9" selection-start-line="4" selection-start-column="9" selection-end-line="4" selection-end-column="9" />
-          <folding>
-            <element signature="e#0#18#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/Part_1/Bidding_Environment.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -245,16 +292,6 @@
           <caret line="15" column="13" selection-start-line="15" selection-start-column="13" selection-end-line="15" selection-end-column="13" />
           <folding>
             <element signature="e#0#33#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/Part_3/GPTS_Learner.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="403">
-          <caret line="42" column="40" lean-forward="true" selection-start-line="42" selection-start-column="40" selection-end-line="42" selection-end-column="40" />
-          <folding>
-            <element signature="e#0#34#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -270,20 +307,59 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Part_3/GPTS_with_error.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="9" column="32" selection-end-line="41" />
+        <state relative-caret-position="301">
+          <caret line="32" column="70" lean-forward="true" selection-start-line="32" selection-start-column="4" selection-end-line="32" selection-end-column="70" />
           <folding>
             <element signature="e#31#64#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Part_3/dp_algorithm.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-561">
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Part_3/Environment.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="216">
+          <caret line="27" column="39" lean-forward="true" selection-start-line="27" selection-start-column="39" selection-end-line="27" selection-end-column="39" />
+          <folding>
+            <element signature="e#0#18#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../../../Tesi/Gaussian-MAB/Algorithms/Comparisons/Old_Comparisons/GPMI_GPTS.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="250">
+          <caret line="60" lean-forward="true" selection-start-line="60" selection-end-line="65" selection-end-column="39" />
+          <folding>
+            <element signature="e#0#31#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/Part_3/Comb_GPTS.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="199">
-          <caret line="33" column="4" lean-forward="true" selection-start-line="33" selection-start-column="4" selection-end-line="33" selection-end-column="4" />
+        <state relative-caret-position="624">
+          <caret line="71" column="19" selection-start-line="71" selection-start-column="19" selection-end-line="71" selection-end-column="19" />
           <folding>
-            <element signature="e#42#75#0" expanded="true" />
+            <element signature="e#0#33#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Part_3/GPTS_Learner.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="85">
+          <caret line="5" selection-start-line="5" selection-end-line="5" />
+          <folding>
+            <element signature="e#0#34#0" expanded="true" />
           </folding>
         </state>
       </provider>
