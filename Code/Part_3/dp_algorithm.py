@@ -39,7 +39,6 @@ class DPAlgorithm:
         for s in subcampaigns:
             row = []
             for arm, b in enumerate(budgets):
-                print(arm, b)
                 row.append(s.n(arm))
             init_table[index_s]=row
             index_s = index_s+1
@@ -64,8 +63,6 @@ class DPAlgorithm:
                 else:
                     # selezionare gli indici di previous_row che sono sotto a budget
                     filtered_choices_pr = previous_row[0:index_b+1]#lista temporanea contenente i casi di previous_row che sono associati ad un budget
-                    #print("F", filtered_choices_pr)
-                    #print(filtered_choices_pr)
                     # selezionare per ogni valore di filtered_choices_pr l'associato della riga della subcampaign
                     for i in range(0, len(filtered_choices_pr)):
                         num_click_pr = previous_row[i]
@@ -75,7 +72,6 @@ class DPAlgorithm:
                         current_num_click_s = init_table[index_s][j]
                         choices = np.append(choices, current_num_click_s + num_click_pr)
                         combination_indices.append((i,j))
-                        #print(current_num_click_s, num_click_pr)
 
                 # find maximum
                 max_val = np.amax(choices)
@@ -105,7 +101,6 @@ class DPAlgorithm:
 
         while current_index_subcampaign >= 0:
             current_row_pairs = pairs_previous_current_for_subcampaign[current_index_subcampaign][optimal_value_i]
-            print(current_row_pairs)
             budget_for_subcampaign[current_index_subcampaign] = budgets[current_row_pairs[1]]
             optimal_value_i = current_row_pairs[0]
             current_index_subcampaign -= 1
