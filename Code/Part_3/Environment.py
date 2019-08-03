@@ -16,12 +16,12 @@ class User:
     # Returns a tuple containing x and y values of a user clicks curve.
     def generate(self):
         # Linear space from 0 to bid value, y is 0 for everything.
-        x_0 = np.linspace(0, self.bid, self.bid * 20)
-        y_0 = np.zeros(self.bid * 20)
+        x_0 = np.linspace(0, self.bid, self.bid *21)
+        y_0 = np.zeros(self.bid * 21)
 
         # Linear space from bid value to max_budget, y is exponential.
-        x_1 = np.linspace(self.bid, self.max_budget, self.max_budget * 20)
-        x = np.linspace(0, self.max_budget - self.bid, self.max_budget * 20)
+        x_1 = np.linspace(self.bid, self.max_budget, self.max_budget * 21)
+        x = np.linspace(0, self.max_budget - self.bid, self.max_budget * 21)
         y_1 = (1 - np.exp(self.slope * x)) * 10
 
         self.x = np.append(x_0, x_1)
@@ -71,7 +71,8 @@ class Subcampaign:
             self.y[i] = y_temp
 
     def get_clicks_real(self, x_value):
-        index = self.x.index(x_value)
+        index = np.where(self.x == x_value)
+        #index = self.x.index(x_value)
         return self.y[index]
 
     def get_clicks_noise(self, x_value):
@@ -100,6 +101,7 @@ class Environment:
         self.prob_users = prob_users
         self.sigma = sigma
         self.subcampaigns = []
+
         for s in range(0, n_subcampaign):
             new_subc = Subcampaign(
                 n_arms=self.n_arms,
@@ -133,19 +135,4 @@ subc = Subcampaign(n_users=2, prob_users=[0.5, 0.5], max_budget=70, bid=10, dail
 subc.plot()
 '''
 
-env = Environment(
-    n_arms=10,
-    n_users=3,
-    n_subcampaign=5,
-    max_budget=70,
-    bid=10,
-    prob_users=[
-        [0.80, 0.10, 0.10],
-        [0.80, 0.10, 0.10],
-        [0.80, 0.10, 0.10],
-        [0.80, 0.10, 0.10],
-        [0.80, 0.10, 0.10]
-    ],
-    sigma=1
-)
-env.plot()
+
