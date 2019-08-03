@@ -1,6 +1,5 @@
-import numpy as np
 import matplotlib.pyplot as plt
-from functools import partial
+import numpy as np
 
 
 # Punto 2
@@ -38,14 +37,14 @@ class User:
 
 
 class Subcampaign:
-    def __init__(self, n_users, prob_users, max_budget, bid, daily_budget_values):
+    def __init__(self, n_arms, n_users, prob_users, max_budget, bid, sigma):
+        self.n_arms = n_arms
         self.n_users = n_users
         # One probability for each user.
         self.prob_users = prob_users
         self.max_budget = max_budget
         self.bid = bid
-        # Arms.
-        self.daily_budget_values = daily_budget_values
+        self.sigma = sigma
         self.users = []
         self.x = []
         self.y = []
@@ -71,6 +70,13 @@ class Subcampaign:
                 y_temp = y_temp + self.users[pos].y[i] * self.prob_users[pos]
             self.y[i] = y_temp
 
+    def get_clicks_real(self, x_value):
+        index = self.x.index(x_value)
+        return self.y[index]
+
+    def get_clicks_noise(self, x_value):
+        return np.random.normal(self.get_clicks_real(x_value), self.sigma)
+
     def plot(self):
         for u in range(0, self.n_users):
             self.users[u].plot()
@@ -84,22 +90,36 @@ class Subcampaign:
 
 class Environment:
 
-    def __init__(self, daily_budget_values, sigma, n_users, n_subcampaign, max_budget, bid, prob_users):
+    def __init__(self, n_arms, n_users, n_subcampaign, max_budget, bid, prob_users, sigma):
         # Arms.
-        self.daily_budget_values = daily_budget_values
-        # self.means = self.fun(daily_budget_values)
-        # self.sigmas = np.ones(len(daily_budget_values)) * sigma
+        self.n_arms = n_arms
         self.n_users = n_users
         self.n_subcampaigns = n_subcampaign
         self.max_budget = max_budget
         self.bid = bid
         self.prob_users = prob_users
+        self.sigma = sigma
         self.subcampaigns = []
         for s in range(0, n_subcampaign):
             new_subc = Subcampaign(
-                self.n_users, self.prob_users[s], self.max_budget, self.bid, self.daily_budget_values
+                n_arms=self.n_arms,
+                n_users=self.n_users,
+                prob_users=self.prob_users[s],
+                max_budget=self.max_budget,
+                bid=self.bid,
+                sigma=self.sigma
             )
             self.subcampaigns.append(new_subc)
+
+    def get_arms(self):
+        arms = np.linspace(0, self.max_budget, self.n_arms)
+        return arms
+
+    def get_clicks_real(self, x_value, subc):
+        self.subcampaigns[subc].get_clicks_real(x_value)
+
+    def get_clicks_noise(self, x_value, subc):
+        self.subcampaigns[subc].get_clicks_noise(x_value)
 
     def plot(self):
         for s in range(0, self.n_subcampaigns):
@@ -114,8 +134,7 @@ subc.plot()
 '''
 
 env = Environment(
-    daily_budget_values=[10, 20, 30],
-    sigma=0,
+    n_arms=10,
     n_users=3,
     n_subcampaign=5,
     max_budget=70,
@@ -126,6 +145,7 @@ env = Environment(
         [0.80, 0.10, 0.10],
         [0.80, 0.10, 0.10],
         [0.80, 0.10, 0.10]
-    ]
+    ],
+    sigma=1
 )
 env.plot()
