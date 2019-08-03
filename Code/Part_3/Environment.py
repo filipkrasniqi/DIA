@@ -16,12 +16,12 @@ class User:
     # Returns a tuple containing x and y values of a user clicks curve.
     def generate(self):
         # Linear space from 0 to bid value, y is 0 for everything.
-        x_0 = np.linspace(0, self.bid, self.bid *21)
-        y_0 = np.zeros(self.bid * 21)
+        x_0 = np.linspace(0, self.bid, self.bid * 20)
+        y_0 = np.zeros(self.bid * 20)
 
         # Linear space from bid value to max_budget, y is exponential.
-        x_1 = np.linspace(self.bid, self.max_budget, self.max_budget * 21)
-        x = np.linspace(0, self.max_budget - self.bid, self.max_budget * 21)
+        x_1 = np.linspace(self.bid, self.max_budget, self.max_budget * 20)
+        x = np.linspace(0, self.max_budget - self.bid, self.max_budget * 20)
         y_1 = (1 - np.exp(self.slope * x)) * 10
 
         self.x = np.append(x_0, x_1)
@@ -71,9 +71,11 @@ class Subcampaign:
             self.y[i] = y_temp
 
     def get_clicks_real(self, x_value):
-        index = np.where(self.x == x_value)
-        #index = self.x.index(x_value)
-        return self.y[index]
+        index = 0
+        while x_value > self.x[index]:
+            index = index + 1
+        y = self.y[index]
+        return y
 
     def get_clicks_noise(self, x_value):
         return np.random.normal(self.get_clicks_real(x_value), self.sigma)
@@ -118,10 +120,10 @@ class Environment:
         return arms
 
     def get_clicks_real(self, x_value, subc):
-        self.subcampaigns[subc].get_clicks_real(x_value)
+        return self.subcampaigns[subc].get_clicks_real(x_value)
 
     def get_clicks_noise(self, x_value, subc):
-        self.subcampaigns[subc].get_clicks_noise(x_value)
+        return self.subcampaigns[subc].get_clicks_noise(x_value)
 
     def plot(self):
         for s in range(0, self.n_subcampaigns):
