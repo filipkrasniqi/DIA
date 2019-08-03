@@ -33,14 +33,22 @@ total_budget = 10
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 
-sigma_env = 10
+sigma_env = 5
+bid=10,
+prob_users=[
+    [0.80, 0.10, 0.10],
+    [0.80, 0.10, 0.10],
+    [0.80, 0.10, 0.10],
+    [0.80, 0.10, 0.10],
+    [0.80, 0.10, 0.10]
+    ]
 T = 100
 
 gpts_rewards_per_experiment_sub_1 = []
 gaussian_error_per_experiment_1 = []
 
-env = Environment(n_sub_campaign,n_arms_sub,sigma_env,n_users_x_sub_campaign,total_budget)
-arms = env.arms()
+env = Environment(n_arms_sub, n_users_x_sub_campaign, n_sub_campaign,total_budget,bid,prob_users  ,sigma_env)
+arms = env.get_arms()
 
 # Val ottimo per calcolare Regret
 matrix = built_matrix_sub_budget_clicks_without_errors(arms,n_sub_campaign,env)
@@ -68,7 +76,7 @@ for t in range(0, T):
 plt.figure(0)
 plt.xlabel("t")
 plt.ylabel("Cumulative Regret")
-plot1 = np.cumsum ((optimum - rewards_per_round,axis=0)
+plot1 = np.cumsum(optimum - rewards_per_round)
 plt.plot(plot1,'r')
 
 #gaussian_error_per_experiment.append(gpts_errors)
