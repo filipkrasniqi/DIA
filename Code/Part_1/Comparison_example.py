@@ -1,5 +1,4 @@
-import matplotlib.pyplot as plt
-from Environment import *
+from Part_3.Environment import *
 from TS_Learner import *
 from Greedy_Learner import *
 
