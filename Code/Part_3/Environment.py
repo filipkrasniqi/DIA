@@ -69,7 +69,7 @@ class Subcampaign:
             y_temp = 0
             for pos in range(0, self.n_users):
                 y_temp = y_temp + self.users[pos].y[i] * self.prob_users[pos]
-            np.append(self.y, y_temp)
+            self.y[i] = y_temp
 
     def plot(self):
         for u in range(0, self.n_users):
@@ -107,7 +107,7 @@ class Environment:
 
 
 '''user = User(max_budget=70, bid=10, slope=-0.1)
-user.plot()'''
+user.plot()
 
 subc = Subcampaign(n_users=2, prob_users=[0.5, 0.5], max_budget=70, bid=10, daily_budget_values=[10, 20, 30])
 subc.plot()
@@ -128,4 +128,4 @@ env = Environment(
         [0.80, 0.10, 0.10]
     ]
 )
-env.plot()'''
+env.plot()
