@@ -77,8 +77,9 @@ class DPAlgorithm:
                 if(len(combination_indices) > 0):
                     val = combination_indices[max_val_i]
                 else:
-                    val = -1
-                pairs_previous_current_for_subcampaign.append(val)
+                    val = (-1, -1)
+                pairs_previous_current_for_subcampaign.append(val[0])
+                pairs_previous_current_for_subcampaign.append(val[1])
                 results = np.append(results, max_val)
                 index_b = index_b + 1
 
@@ -88,7 +89,7 @@ class DPAlgorithm:
             index_s = index_s + 1
 
         table_result = table_result.reshape(len(subcampaigns), len(budgets))
-        pairs_previous_current_for_subcampaign = np.array(pairs_previous_current_for_subcampaign).reshape(len(subcampaigns), len(budgets))
+        # pairs_previous_current_for_subcampaign = np.array(pairs_previous_current_for_subcampaign).reshape(len(subcampaigns), len(budgets))
 
         # backward computation of the budget allocation for each subcampaign
         optimal_value = np.amax(table_result[-1])
@@ -98,7 +99,8 @@ class DPAlgorithm:
         current_index_subcampaign = len(subcampaigns) - 1
 
         while current_index_subcampaign >= 0:
-            current_row_pairs = pairs_previous_current_for_subcampaign[current_index_subcampaign][optimal_value_i]
+            index_pairs = current_index_subcampaign * len(budgets) + optimal_value_i
+            current_row_pairs = pairs_previous_current_for_subcampaign[index_pairs]# pairs_previous_current_for_subcampaign[current_index_subcampaign][optimal_value_i]
             budget_for_subcampaign[current_index_subcampaign] = budgets[current_row_pairs[1]]
             optimal_value_i = current_row_pairs[0]
             current_index_subcampaign -= 1
