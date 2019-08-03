@@ -100,9 +100,10 @@ class DPAlgorithm:
 
         while current_index_subcampaign >= 0:
             index_pairs = current_index_subcampaign * len(budgets) + optimal_value_i
-            current_row_pairs = pairs_previous_current_for_subcampaign[index_pairs]# pairs_previous_current_for_subcampaign[current_index_subcampaign][optimal_value_i]
-            budget_for_subcampaign[current_index_subcampaign] = budgets[current_row_pairs[1]]
-            optimal_value_i = current_row_pairs[0]
+            previous_value_dp = pairs_previous_current_for_subcampaign[index_pairs]# pairs_previous_current_for_subcampaign[current_index_subcampaign][optimal_value_i]
+            current_sub_value_dp = pairs_previous_current_for_subcampaign[index_pairs+1]
+            budget_for_subcampaign[current_index_subcampaign] = budgets[current_sub_value_dp]
+            optimal_value_i = previous_value_dp
             current_index_subcampaign -= 1
 
         return (optimal_value, budget_for_subcampaign)
