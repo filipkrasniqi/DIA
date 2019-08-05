@@ -126,13 +126,13 @@ class Environment:
         return self.subcampaigns[subc].get_clicks_noise(x_value)
 
     def get_clicks_noise(self, x_value):
-        #click = []
-        #for i,val in enumerate(x_value):
-        #    click.append(self.get_click_noise(val,i))
+        click = []
+        for i,val in enumerate(x_value):
+            click.append(self.get_click_noise(val,i))
 
-        #return click
+        return click
 
-        return [self.get_click_noise(val,i) for i,val in enumerate(x_value)]
+        #return [self.get_click_noise(val,i) for i,val in enumerate(x_value)]
 
     def plot(self):
         for s in range(0, self.n_subcampaigns):

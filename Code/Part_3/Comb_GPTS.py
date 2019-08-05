@@ -1,8 +1,7 @@
-from Part_3.GPTS_Learner import *
-from Part_3.Environment import *
-from Part_3.dp_algorithm import *
+from Code.Part_3.GPTS_Learner import *
+from Code.Part_3.Environment import *
+from Code.Part_3.dp_algorithm import *
 import matplotlib.pyplot as plt
-
 
 # Punto 3
 
@@ -39,7 +38,7 @@ total_budget = 100
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 
-sigma_env = 3
+sigma_env = 1
 bid = 10
 prob_users = [
     [0.80, 0.10, 0.10],
@@ -64,23 +63,22 @@ optimum = combinatorial[0]
 
 gpts_learners = []
 for i in range(0, n_sub_campaign):
-    gpts_learners.append(GPTS_Learner(n_arms=n_arms_sub, arms=arms,sigma=sigma_env))
+    gpts_learners.append(GPTS_Learner(n_arms=n_arms_sub, arms=arms,sigma_gp=sigma_env,initial_sigmas=sigma_env))
 
 rewards_per_round = []
 
 for t in range(0, T):
-    for i in range(0, n_sub_campaign):
-        gpts_learners[i].pull_arm()
-
     matrix = built_matrix_sub_budget_clicks(n_arms_sub, arms, n_sub_campaign, gpts_learners)
     combinatorial_alg = DPAlgorithm(arms, n_sub_campaign, matrix, min_daily_budget, total_budget)
     combinatorial = combinatorial_alg.get_budgets()
     pulled_arms = combinatorial[1]
+
+    # return the campaigns reward
     rewards = env.get_clicks_noise(pulled_arms)
 
     for i in range(0, n_sub_campaign):
-        pulled_arm = np.where(gpts_learners[i].arms == pulled_arms[i])[0]
-        gpts_learners[i].update(int(pulled_arm), rewards[i])
+        pulled_arm = int( np.where(gpts_learners[i].arms == pulled_arms[i])[0])
+        gpts_learners[i].update(pulled_arm, rewards[i])
 
     rewards_per_round.append(np.sum(rewards))
     print(t)
