@@ -8,11 +8,8 @@ import matplotlib.pyplot as plt
 def built_matrix_sub_budget_clicks(n_arms, arms, n_sub_campaign, gpts_learners):
     matrix = []
     for i in range(0, n_sub_campaign):
-        vet = []
-        for j in range(0, n_arms):
-            vet.append(gpts_learners[i].means[j])
-
-        matrix.append(vet)
+        samples = gpts_learners[i].pull_arm()
+        matrix.append(samples)
 
     return matrix
 
@@ -38,7 +35,7 @@ total_budget = 100
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 
-sigma_env = 1
+sigma_env = 0.1
 bid = 10
 prob_users = [
     [0.80, 0.10, 0.10],
