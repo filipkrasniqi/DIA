@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
+import scipy.stats as stats
 import numpy as np
-
 
 # Punto 2
 
@@ -78,7 +78,12 @@ class Subcampaign:
         return y
 
     def get_clicks_noise(self, x_value):
-        return max(0, np.random.normal(self.get_clicks_real(x_value), self.sigma))
+        lower, upper = 0, self.get_clicks_real(x_value) + self.sigma
+        mu, sigma = self.get_clicks_real(x_value),self.sigma
+        X = stats.truncnorm( (lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+
+        return X.rvs(1)
+        #return max(0, np.random.normal(self.get_clicks_real(x_value), self.sigma))
 
     def plot(self):
         for u in range(0, self.n_users):
