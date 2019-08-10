@@ -44,7 +44,7 @@ prob_users = [
     [0.80, 0.10, 0.10],
     [0.80, 0.10, 0.10]
 ]
-T = 20
+T = 100
 
 gpts_rewards_per_experiment_sub_1 = []
 gaussian_error_per_experiment_1 = []
@@ -69,7 +69,9 @@ for t in range(0, T):
     combinatorial_alg = DPAlgorithm(arms, n_sub_campaign, matrix, min_daily_budget, total_budget)
     combinatorial = combinatorial_alg.get_budgets()
     pulled_arms = combinatorial[1]
-
+    instanciated_budget = np.sum(pulled_arms)
+    if instanciated_budget > total_budget:
+        print("QUALQUADRA NON COSA")
     # return the campaigns reward
     rewards = env.get_clicks_noise(pulled_arms)
 
