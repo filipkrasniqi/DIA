@@ -2,6 +2,7 @@ from Code.Part_1.Learner import Learner
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
+import scipy.stats as stats
 
 
 class GPTS_Learner(Learner):
@@ -31,6 +32,7 @@ class GPTS_Learner(Learner):
         self.gp.fit(x, y)
         self.means, self.sigmas = self.gp.predict(np.atleast_2d(self.arms).T, return_std=True)
         self.sigmas = np.maximum(self.sigmas, 1e-2)
+        self.means = np.maximum(self.means, 0)
 
     def update(self, pulled_arm, reward):
         self.t += 1
@@ -38,9 +40,15 @@ class GPTS_Learner(Learner):
         self.update_model()
 
     def pull_arm(self):
-        sampled_values = np.random.normal(self.means, self.sigmas)
-        return sampled_values
 
-        #return np.argmax(sampled_values)
+        # return np.maximum(np.random.normal(self.means, self.sigmas), 0)
+
+        sampled_values = []
+        for mu, sigma in zip(self.means, self.sigmas):
+            lower, upper = 0, mu + 2 * sigma
+            mu, sigma = mu, sigma
+            X = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+            sampled_values.append(X.rvs(1))
+        return sampled_values
 
 

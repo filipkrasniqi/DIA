@@ -31,20 +31,9 @@ def built_matrix_sub_budget_clicks_without_errors(n_arms, arms, n_sub_campaign, 
 '''
 Prepare environment for script
 '''
-
 sigma_env_n = [0.01, 0.1, 1]
 bid = 10
-'''
-prob_users_n = [
-[
-        [0.80, 0.10, 0.10],
-        [0.80, 0.10, 0.10],
-        [0.80, 0.10, 0.10],
-        [0.80, 0.10, 0.10],
-        [0.80, 0.10, 0.10]
-    ]
-]
-'''
+
 prob_users_n = [
     [
         [0.80, 0.10, 0.10],
@@ -87,7 +76,7 @@ curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
 if not os.path.exists(outputs_dir):
     os.mkdir(outputs_dir)
-env_dir = outputs_dir+"prova_2/"
+env_dir = outputs_dir+"prova_finale/"
 if not os.path.exists(env_dir):
     os.mkdir(env_dir)
 
@@ -99,7 +88,7 @@ total_budget = 100
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 
-T = 50
+T = 40
 
 for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
     sigma_env = s_p[0]
