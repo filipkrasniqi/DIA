@@ -70,11 +70,27 @@ class Subcampaign:
                 y_temp = y_temp + self.users[pos].y[i] * self.prob_users[pos]
             self.y[i] = y_temp
 
+    '''
+    Other implementation of function with noise
+    '''
+    def get_clicks_noise_summed(self, budget):
+        y = self.get_clicks_real(budget)
+        mu, sigma = 0, self.sigma
+        '''
+        lower, upper = -y, y+2*self.sigma
+        mu, sigma = 0, self.sigma
+        sample = stats.truncnorm( (lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma).rvs(1)
+        '''
+        sample = np.random.normal(mu, sigma)
+        return max(0, y+sample)
+
     def get_clicks_real(self, x_value):
         index = 0
         while x_value > self.x[index]:
             index = index + 1
         y = self.y[index]
+        if y < 0:
+            print("FUNZIONE NEGATIVA!!!")
         return y
 
     def get_clicks_noise(self, x_value):
@@ -128,16 +144,13 @@ class Environment:
         return self.subcampaigns[subc].get_clicks_real(x_value)
 
     def get_click_noise(self, x_value, subc):
-        return self.subcampaigns[subc].get_clicks_noise(x_value)
+        return self.subcampaigns[subc].get_clicks_noise_summed(x_value)
 
-    def get_clicks_noise(self, x_value):
+    def get_clicks_noise(self, budgets):
         click = []
-        for i,val in enumerate(x_value):
-            click.append(self.get_click_noise(val,i))
-
+        for i, budget in enumerate(budgets):
+            click.append(self.get_click_noise(budget,i))
         return click
-
-        #return [self.get_click_noise(val,i) for i,val in enumerate(x_value)]
 
     def plot(self):
         for s in range(0, self.n_subcampaigns):
