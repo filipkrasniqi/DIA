@@ -34,6 +34,17 @@ Prepare environment for script
 
 sigma_env_n = [0.01, 0.1, 1]
 bid = 10
+'''
+prob_users_n = [
+[
+        [0.80, 0.10, 0.10],
+        [0.80, 0.10, 0.10],
+        [0.80, 0.10, 0.10],
+        [0.80, 0.10, 0.10],
+        [0.80, 0.10, 0.10]
+    ]
+]
+'''
 prob_users_n = [
     [
         [0.80, 0.10, 0.10],
@@ -76,7 +87,7 @@ curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
 if not os.path.exists(outputs_dir):
     os.mkdir(outputs_dir)
-env_dir = outputs_dir+"prova_1/"
+env_dir = outputs_dir+"prova_2/"
 if not os.path.exists(env_dir):
     os.mkdir(env_dir)
 
@@ -88,7 +99,7 @@ total_budget = 100
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 
-T = 1000
+T = 50
 
 for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
     sigma_env = s_p[0]
@@ -115,6 +126,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
         gpts_learners.append(GPTS_Learner(n_arms=n_arms_sub, arms=arms, sigma_gp=sigma_env, initial_sigmas=sigma_env))
 
     rewards_per_round = []
+    regression_error = []
 
     for t in range(0, T):
         matrix = built_matrix_sub_budget_clicks(n_arms_sub, arms, n_sub_campaign, gpts_learners)
@@ -126,6 +138,12 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
             print("QUALQUADRA NON COSA")
         # return the campaigns reward
         rewards = env.get_clicks_noise(pulled_arms)
+        # k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n))
+        real_value_for_arms = [env.get_clicks_real(arm_sub[0], arm_sub[1]) for arm_sub in itertools.product(pulled_arms, list(range(n_sub_campaign)))]
+        # ()
+        current_regression_error = [abs(reward - real_value_for_arm) for (reward, real_value_for_arm) in zip(rewards, real_value_for_arms)]
+        # regression error is avg(pulled_clicks - real_clicks)
+        regression_error.append(np.average(np.array(current_regression_error)))
 
         for i in range(0, n_sub_campaign):
             pulled_arm = int(np.where(gpts_learners[i].arms == pulled_arms[i])[0])
@@ -145,6 +163,13 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
     plt.plot(plot1, 'r')
     # save log in file
     plt.savefig(cur_fold+'/cumreg.png')
+    plt.show()
+
+    plt.figure(1)
+    plt.xlabel("t")
+    plt.ylabel("Avg Regression Error")
+    plt.plot(regression_error, 'b')
+    plt.savefig(cur_fold+'/avrregerr.png')
     plt.show()
 
     log = str(sigma_env)+"\n"+str(prob_users)
