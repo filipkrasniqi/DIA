@@ -4,6 +4,7 @@ from Code.Part_3.dp_algorithm import *
 import matplotlib.pyplot as plt
 import os
 import itertools
+import time
 
 # Punto 3
 
@@ -31,7 +32,7 @@ def built_matrix_sub_budget_clicks_without_errors(n_arms, arms, n_sub_campaign, 
 '''
 Prepare environment for script
 '''
-sigma_env_n = [0.01, 0.1, 1]
+sigma_env_n = [0.1, 1]
 bid = 10
 
 prob_users_n = [
@@ -88,7 +89,7 @@ total_budget = 100
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 
-T = 40
+T = 20
 
 for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
     sigma_env = s_p[0]
@@ -116,8 +117,10 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
 
     rewards_per_round = []
     regression_error = []
+    arm_obs = np.array([])
 
-    for t in range(0, T):
+    start_time = time.time()
+    for t in range(1, T+1):
         matrix = built_matrix_sub_budget_clicks(n_arms_sub, arms, n_sub_campaign, gpts_learners)
         combinatorial_alg = DPAlgorithm(arms, n_sub_campaign, matrix, min_daily_budget, total_budget)
         combinatorial = combinatorial_alg.get_budgets()
@@ -138,8 +141,46 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
             pulled_arm = int(np.where(gpts_learners[i].arms == pulled_arms[i])[0])
             gpts_learners[i].update(pulled_arm, rewards[i])
 
+            if t == 10:
+                # Plot every subcampaign.
+                real_function_y = []
+                for a in arms:
+                    real_function_y.append(env.get_clicks_real(a, i))
+
+                p = gpts_learners[i].arms[pulled_arm]
+                reward = env.get_click_noise(p, i)
+                gpts_learners[i].update(pulled_arm, reward)
+
+                arm_obs = np.append(arm_obs, arms[pulled_arm])
+
+                X = np.atleast_2d(arm_obs).T
+                Y = gpts_learners[i].collected_rewards.ravel()
+                x_pred = np.atleast_2d(arms).T
+
+                y = np.array(gpts_learners[i].means)
+                sigmaGP = np.array(gpts_learners[i].sigmas)
+
+                plt.figure(t)
+                plt.plot(x_pred, real_function_y, 'r:', label=r'$Real Function$')
+                #plt.plot(X.ravel(), Y, 'ro', label=u'Observed Arms')
+                plt.plot(x_pred, y, 'b-', label=u'Predicted Rewards')
+                plt.fill(np.concatenate([x_pred, x_pred[::-1]]),
+                         np.concatenate([y - 1.96 * sigmaGP, (y + 1.96 * sigmaGP)[::-1]]),
+                         alpha=0.5, fc='b', ec='None', label='95% conf interval')
+
+                plt.xlabel('$x$')
+                plt.ylabel('$Real Function$')
+                plt.legend(loc='lower right')
+                plt.show()
+
         rewards_per_round.append(np.sum(rewards))
-        print(t)
+
+        # Print time necessary for 10 epochs.
+        if t % 10 == 0:
+            end_time = time.time()
+            t_time = end_time - start_time
+            print(str(t) + ' - time: ' + str(round(t_time, 2)) + ' sec')
+            start_time = time.time()
 
         # gpts_errors.append(np.max( np.absolute(env.means - gpts_learner.means) ))
 
@@ -168,10 +209,3 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
     print("Completed {} out of {}".format(k+1, len(sigma_env_n) * len(prob_users_n)))
 
 # gaussian_error_per_experiment.append(gpts_errors)
-
-# plt.figure(0)
-# plt.xlabel("t")
-# plt.ylabel("Regression Error")
-# plt.plot(np.mean(gaussian_error_per_experiment, axis=0), 'g')
-# plt.legend(["GPTS"])
-# plt.show()
