@@ -29,7 +29,7 @@ class GPTS_Learner(Learner):
         y = self.collected_rewards
         # X: Training Data
         # Y: Target Values
-        self.gp.fit(x, y)
+        self.gp = self.gp.fit(x, y)
         self.means, self.sigmas = self.gp.predict(np.atleast_2d(self.arms).T, return_std=True)
         self.sigmas = np.maximum(self.sigmas, 1e-2)
         self.means = np.maximum(self.means, 0)
