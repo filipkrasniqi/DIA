@@ -115,6 +115,11 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
     for i in range(0, n_sub_campaign):
         gpts_learners.append(GPTS_Learner(n_arms=n_arms_sub, arms=arms, sigma_gp=sigma_env, initial_sigmas=sigma_env))
 
+    # execute once the learners to avoid wrong convergence due to bad initialization
+    for subc in range(0, n_sub_campaign):
+        for i,arm in enumerate(arms):
+            reward = env.get_click_noise(i, subc)
+            gpts_learners[subc].update(i, reward)
     rewards_per_round = []
     regression_error = []
     arm_obs = np.array([])

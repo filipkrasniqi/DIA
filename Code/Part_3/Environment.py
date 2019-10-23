@@ -93,9 +93,9 @@ class Subcampaign:
             print("FUNZIONE NEGATIVA!!!")
         return y
 
-    def get_clicks_noise(self, x_value):
-        lower, upper = 0, self.get_clicks_real(x_value) + self.sigma
-        mu, sigma = self.get_clicks_real(x_value),self.sigma
+    def get_clicks_noise(self, budgets):
+        lower, upper = 0, self.get_clicks_real(budgets) + self.sigma
+        mu, sigma = self.get_clicks_real(budgets), self.sigma
         X = stats.truncnorm( (lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
         return X.rvs(1)
