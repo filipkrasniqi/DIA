@@ -1,8 +1,12 @@
 import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
+import itertools
 
 # Punto 2
+
+RESOLUTION = 20
+
 
 class User:
     def __init__(self, max_budget, bid, slope):
@@ -16,12 +20,12 @@ class User:
     # Returns a tuple containing x and y values of a user clicks curve.
     def generate(self):
         # Linear space from 0 to bid value, y is 0 for everything.
-        x_0 = np.linspace(0, self.bid, self.bid * 20)
-        y_0 = np.zeros(self.bid * 20)
+        x_0 = np.linspace(0, self.bid, self.bid * RESOLUTION)
+        y_0 = np.zeros(self.bid * RESOLUTION)
 
         # Linear space from bid value to max_budget, y is exponential.
-        x_1 = np.linspace(self.bid, self.max_budget, self.max_budget * 20)
-        x = np.linspace(0, self.max_budget - self.bid, self.max_budget * 20)
+        x_1 = np.linspace(self.bid, self.max_budget, (self.max_budget - self.bid) * RESOLUTION)
+        x = np.linspace(0, self.max_budget - self.bid, (self.max_budget - self.bid) * RESOLUTION)
         y_1 = (1 - np.exp(self.slope * x)) * 10
 
         self.x = np.append(x_0, x_1)
@@ -73,6 +77,7 @@ class Subcampaign:
     '''
     Other implementation of function with noise
     '''
+
     def get_clicks_noise_summed(self, budget):
         y = self.get_clicks_real(budget)
         mu, sigma = 0, self.sigma
@@ -82,7 +87,7 @@ class Subcampaign:
         sample = stats.truncnorm( (lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma).rvs(1)
         '''
         sample = np.random.normal(mu, sigma)
-        return max(0, y+sample)
+        return max(0, y + sample)
 
     def get_clicks_real(self, x_value):
         index = 0
@@ -96,10 +101,10 @@ class Subcampaign:
     def get_clicks_noise(self, budgets):
         lower, upper = 0, self.get_clicks_real(budgets) + self.sigma
         mu, sigma = self.get_clicks_real(budgets), self.sigma
-        X = stats.truncnorm( (lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+        X = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
         return X.rvs(1)
-        #return max(0, np.random.normal(self.get_clicks_real(x_value), self.sigma))
+        # return max(0, np.random.normal(self.get_clicks_real(x_value), self.sigma))
 
     def plot(self):
         for u in range(0, self.n_users):
@@ -147,9 +152,15 @@ class Environment:
         return self.subcampaigns[subc].get_clicks_noise_summed(x_value)
 
     def get_clicks_noise(self, budgets):
+        '''
         click = []
         for i, budget in enumerate(budgets):
             click.append(self.get_click_noise(budget,i))
+        return click
+        '''
+        click = []
+        for budget, n_subc in itertools.product(budgets, list(range(self.n_subcampaigns))):
+            click.append(self.get_click_noise(budget, n_subc))
         return click
 
     def plot(self):
@@ -163,5 +174,3 @@ user.plot()
 subc = Subcampaign(n_users=2, prob_users=[0.5, 0.5], max_budget=70, bid=10, daily_budget_values=[10, 20, 30])
 subc.plot()
 '''
-
-
