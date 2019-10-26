@@ -42,13 +42,14 @@ class User:
 
 
 class Subcampaign:
-    def __init__(self, n_arms, n_users, prob_users, max_budget, bid, sigma, idx):
+    def __init__(self, n_arms, n_users, prob_users, max_budget, sigma, idx, bids, slopes):
         self.n_arms = n_arms
         self.n_users = n_users
         # One probability for each user.
         self.prob_users = prob_users
         self.max_budget = max_budget
-        self.bid = bid
+        self.bids = bids
+        self.slopes = slopes
         self.sigma = sigma
         self.users = []
         self.x = []
@@ -57,12 +58,10 @@ class Subcampaign:
         self.idx = idx
 
     def generate(self):
-        # Slope for each user curve.
-        slopes = [-0.1 * (1), -0.1 * (2), -0.1 * (3)]
 
         # Generate a curve for each user.
         for i in range(self.n_users):
-            new_user = User(self.max_budget, self.bid, slopes[i], i)
+            new_user = User(self.max_budget, self.bids[i], self.slopes[i], i)
             self.users.append(new_user)
 
         # Create subcampaign curve.
@@ -121,13 +120,12 @@ class Subcampaign:
 
 class Environment:
 
-    def __init__(self, n_arms, n_users, n_subcampaign, max_budget, bid, prob_users, sigma):
+    def __init__(self, n_arms, n_users, n_subcampaign, max_budget, prob_users, sigma, bids, slopes):
         # Arms.
         self.n_arms = n_arms
         self.n_users = n_users
         self.n_subcampaigns = n_subcampaign
         self.max_budget = max_budget
-        self.bid = bid
         self.prob_users = prob_users
         self.sigma = sigma
         self.subcampaigns = []
@@ -138,7 +136,8 @@ class Environment:
                 n_users=self.n_users,
                 prob_users=self.prob_users[s],
                 max_budget=self.max_budget,
-                bid=self.bid,
+                bid=bids[s],
+                slopes = slopes[s],
                 sigma=self.sigma,
                 idx = s)
             self.subcampaigns.append(new_subc)

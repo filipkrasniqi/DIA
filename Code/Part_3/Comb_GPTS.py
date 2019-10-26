@@ -29,11 +29,16 @@ def built_matrix_sub_budget_clicks_without_errors(n_arms, arms, n_sub_campaign, 
 
     return matrix
 
+# characteristic for the functions
+# one bid for each instance (subc, usr)
+bids = [[5,12,5], [7,7,7], [4,6,4], [12,12,5], [10,10,7]]
+slopes = -1* [[0.4, 0.1, 0.7], [0.1, 0.3, 0.9], [1, 0.3, 0.7], [0.1, 1, 0.5], [0.3, 0.5, 0.7]]
+
 '''
 Prepare environment for script
 '''
+
 sigma_env_n = [0.01, 1, 2]
-bid = 10
 
 prob_users_n = [
     [
@@ -105,7 +110,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
     gpts_rewards_per_experiment_sub_1 = []
     gaussian_error_per_experiment_1 = []
 
-    env = Environment(n_arms_sub, n_users_x_sub_campaign, n_sub_campaign, total_budget, bid, prob_users, sigma_env)
+    env = Environment(n_arms_sub, n_users_x_sub_campaign, n_sub_campaign, total_budget, bids, prob_users, sigma_env, bids, slopes)
     arms = env.get_arms()
     env.plot()
 
