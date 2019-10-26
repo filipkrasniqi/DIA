@@ -2,6 +2,7 @@ from Code.Part_3.GPTS_Learner import *
 from Code.Part_3.Environment import *
 from Code.Part_3.dp_algorithm import *
 import matplotlib.pyplot as plt
+import numpy as np
 import os
 import itertools
 import time
@@ -31,14 +32,9 @@ def built_matrix_sub_budget_clicks_without_errors(n_arms, arms, n_sub_campaign, 
 
 # characteristic for the functions
 # one bid for each instance (subc, usr)
-bids = [[5,12,5], [7,7,7], [4,6,4], [12,12,5], [10,10,7]]
-slopes = -1* [[0.4, 0.1, 0.7], [0.1, 0.3, 0.9], [1, 0.3, 0.7], [0.1, 1, 0.5], [0.3, 0.5, 0.7]]
-
-'''
-Prepare environment for script
-'''
-
-sigma_env_n = [0.01, 1, 2]
+bids = np.array([[15,22,12], [17,17,17], [24,16,14], [12,17,25], [10,10,17]])
+slopes = -1* np.array([[0.4, 0.1, 0.7], [0.1, 0.3, 0.9], [1, 0.3, 0.7], [0.1, 1, 0.5], [0.3, 0.5, 0.7]])
+max_clicks = np.array([[15,22,12], [17,17,17], [24,16,14], [12,17,25], [10,10,17]])
 
 prob_users_n = [
     [
@@ -49,6 +45,11 @@ prob_users_n = [
         [0.10, 0.30, 0.60]
     ]
 ]
+
+'''
+Prepare environment for script
+'''
+sigma_env_n = [0.01, 1, 2]
 
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
@@ -66,7 +67,7 @@ total_budget = 200
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 
-T = 250
+T = 200
 
 def plot_regression(cur_fold, arms, env, idx_subcampaign, save_figure = False):
     # Plot every subcampaign.
@@ -110,7 +111,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
     gpts_rewards_per_experiment_sub_1 = []
     gaussian_error_per_experiment_1 = []
 
-    env = Environment(n_arms_sub, n_users_x_sub_campaign, n_sub_campaign, total_budget, bids, prob_users, sigma_env, bids, slopes)
+    env = Environment(n_arms_sub, n_users_x_sub_campaign, n_sub_campaign, total_budget, prob_users, sigma_env, bids, slopes, max_clicks)
     arms = env.get_arms()
     env.plot()
 
