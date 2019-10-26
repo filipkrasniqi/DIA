@@ -32,7 +32,7 @@ def built_matrix_sub_budget_clicks_without_errors(n_arms, arms, n_sub_campaign, 
 '''
 Prepare environment for script
 '''
-sigma_env_n = [0.01, 0.1, 1, 2]
+sigma_env_n = [0.01, 1, 2]
 bid = 10
 
 prob_users_n = [
@@ -42,13 +42,6 @@ prob_users_n = [
         [0.50, 0.10, 0.40],
         [0.05, 0.05, 0.90],
         [0.10, 0.30, 0.60]
-    ],
-    [
-        [0.60, 0.20, 0.20],
-        [0.30, 0.40, 0.30],
-        [0.30, 0.60, 0.10],
-        [0.95, 0.05, 0.0],
-        [0.2, 0.70, 0.10]
     ]
 ]
 
@@ -56,19 +49,19 @@ curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
 if not os.path.exists(outputs_dir):
     os.mkdir(outputs_dir)
-env_dir = outputs_dir+"test1/"
+env_dir = outputs_dir+"2vars/"
 if not os.path.exists(env_dir):
     os.mkdir(env_dir)
 
 n_sub_campaign = 5
 n_users_x_sub_campaign = 3
 n_arms_sub = 21
-total_budget = 100
+total_budget = 200
 
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 
-T = 20
+T = 250
 
 def plot_regression(cur_fold, arms, env, idx_subcampaign, save_figure = False):
     # Plot every subcampaign.
@@ -149,11 +142,11 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
         # return the campaigns reward
         rewards = env.get_clicks_noise(pulled_arms)
         # k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n))
-        real_value_for_arms = [env.get_clicks_real(arm_sub[0], arm_sub[1]) for arm_sub in itertools.product(pulled_arms, list(range(n_sub_campaign)))]
+        real_value_for_arms = [env.get_clicks_real(arm, subc) for subc, arm in enumerate(pulled_arms)]
         # ()
         current_regression_error = [abs(reward - real_value_for_arm) for (reward, real_value_for_arm) in zip(rewards, real_value_for_arms)]
         # regression error is avg(pulled_clicks - real_clicks)
-        regression_error.append(np.average(np.array(current_regression_error)))
+        regression_error.append(np.max(np.array(current_regression_error)))
 
         for i in range(0, n_sub_campaign):
             pulled_arm = int(np.where(gpts_learners[i].arms == pulled_arms[i])[0])
@@ -163,7 +156,9 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, prob_users_n)):
                 # Plot every subcampaign.
                 plot_regression(cur_fold, arms, env, i)
 
-        rewards_per_round.append(np.sum(rewards))
+        # rewards_per_round.append(np.sum(rewards))
+        # TODO prendere arm associati a rewards e calcolare reward vero.
+        rewards_per_round.append(np.sum(real_value_for_arms))
 
         # Print time necessary for 10 epochs.
         if t % 10 == 0:

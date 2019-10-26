@@ -9,13 +9,14 @@ RESOLUTION = 20
 
 
 class User:
-    def __init__(self, max_budget, bid, slope):
+    def __init__(self, max_budget, bid, slope, idx):
         self.max_budget = max_budget
         self.bid = bid
         self.slope = slope
         self.x = []
         self.y = []
         self.generate()
+        self.idx = idx
 
     # Returns a tuple containing x and y values of a user clicks curve.
     def generate(self):
@@ -27,13 +28,13 @@ class User:
         x_1 = np.linspace(self.bid, self.max_budget, (self.max_budget - self.bid) * RESOLUTION)
         x = np.linspace(0, self.max_budget - self.bid, (self.max_budget - self.bid) * RESOLUTION)
         y_1 = (1 - np.exp(self.slope * x)) * 10
-
+        # y_1 = x_1*(self.slope*(-10))
         self.x = np.append(x_0, x_1)
         self.y = np.append(y_0, y_1)
 
     def plot(self):
         plt.plot(self.x, self.y)
-        plt.title("User")
+        plt.title("User {}".format(self.idx))
         plt.xlabel("Daily budget")
         plt.xlim((0, self.max_budget))
         plt.ylabel("Clicks")
@@ -41,7 +42,7 @@ class User:
 
 
 class Subcampaign:
-    def __init__(self, n_arms, n_users, prob_users, max_budget, bid, sigma):
+    def __init__(self, n_arms, n_users, prob_users, max_budget, bid, sigma, idx):
         self.n_arms = n_arms
         self.n_users = n_users
         # One probability for each user.
@@ -53,6 +54,7 @@ class Subcampaign:
         self.x = []
         self.y = []
         self.generate()
+        self.idx = idx
 
     def generate(self):
         # Slope for each user curve.
@@ -60,7 +62,7 @@ class Subcampaign:
 
         # Generate a curve for each user.
         for i in range(self.n_users):
-            new_user = User(self.max_budget, self.bid, slopes[i])
+            new_user = User(self.max_budget, self.bid, slopes[i], i)
             self.users.append(new_user)
 
         # Create subcampaign curve.
@@ -110,7 +112,7 @@ class Subcampaign:
         for u in range(0, self.n_users):
             self.users[u].plot()
         plt.plot(self.x, self.y)
-        plt.title("Subcampaign")
+        plt.title("Subcampaign {}".format(self.idx))
         plt.xlabel("Daily budget")
         plt.xlim((0, self.max_budget))
         plt.ylabel("Clicks")
@@ -137,8 +139,8 @@ class Environment:
                 prob_users=self.prob_users[s],
                 max_budget=self.max_budget,
                 bid=self.bid,
-                sigma=self.sigma
-            )
+                sigma=self.sigma,
+                idx = s)
             self.subcampaigns.append(new_subc)
 
     def get_arms(self):
