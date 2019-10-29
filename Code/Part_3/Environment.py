@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 import numpy as np
 import itertools
+from random import random
 
 # Punto 2
 
@@ -70,6 +71,7 @@ class Subcampaign:
         self.x = self.users[0].x
         self.y = self.x.copy()
 
+        # Creation of perfect curve with known probabilities.
         for i in range(len(self.x)):
             self.y[i] = 0
             y_temp = 0
@@ -93,10 +95,13 @@ class Subcampaign:
         return max(0, y + sample)
 
     def get_clicks_real(self, x_value):
+        # Search for the index representing the right x_value on the x axis.
         index = 0
         while x_value > self.x[index]:
             index = index + 1
+            
         y = self.y[index]
+        # Check for negativity.
         if y < 0:
             print("FUNZIONE NEGATIVA!!!")
         return y
@@ -108,6 +113,25 @@ class Subcampaign:
 
         return X.rvs(1)
         # return max(0, np.random.normal(self.get_clicks_real(x_value), self.sigma))
+
+    def sample(self, budget):
+        # Search for the index representing the right budget on the x axis.
+        index = 0
+        while budget > self.x[index]:
+            index = index + 1
+
+        # Generate random value in order to select user to sample.
+        user_sampled = len(self.prob_users)
+        for i, prob in enumerate(self.prob_users):
+            rand = random()
+            if rand <= prob:
+                user_sampled = i
+                break
+
+        # User curve sampling.
+        y = self.users[user_sampled].y[index]
+
+        return y, user_sampled
 
     def plot(self):
         for u in range(0, self.n_users):
