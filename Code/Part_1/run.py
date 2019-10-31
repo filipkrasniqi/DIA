@@ -7,8 +7,8 @@ from Code.Part_1.ProjectEnvironment import ProjectEnvironment as Environment
 from Code.Part_1.SequentialABLearner import SequentialABLearner
 
 probabilities = [0.4, 0.3, 0.3]
-sigma_env_n = [0.1]
-T = 360
+sigma_env_n = [1]
+T = 720
 
 
 def linear(x):
@@ -25,49 +25,37 @@ max_price = 150
 n_arms = math.ceil(math.pow(T * math.log(T, 10), 0.25))
 arms = np.linspace(min_price, max_price, num=n_arms)
 
-min_confidence = 0.95 # this is 1-alpha
+min_confidence = 0.95   # this is 1-alpha
 alpha = 1 - min_confidence
 beta = 0.05
-delta = 0.1
-# TODO what is sigma
-# n_candidates = int(((z(1-alpha) + z(b))**2 * sigma ** 2) / delta ** 2)
+delta = 0.001
+portion_samples_ab_testing = 0.5
+test_T = int(portion_samples_ab_testing*T)
 
+norm_dist = stats.norm(0, 1)
+z_a, z_b = norm_dist.pdf(1-alpha), norm_dist.pdf(beta)
+do_sequential_AB = False
+
+# 1) Sequential AB testing
 for sigma in sigma_env_n:
     env = Environment(arms, probabilities, sigma, matrix_parameters)
-    env.plot()
+    # env.plot()
 
     # sequential AB testing
     # 1) Sampling and computing empirical mean
-    learner = SequentialABLearner(n_arms)
-    for t in range(int(T)):
-        for idx_arm in range(n_arms):
-            arm = arms[idx_arm]
-            reward, user = env.round(arm, t)
-            learner.update(idx_arm, reward, user)
+    learner = SequentialABLearner(arms)
+    for t in range(test_T):
+        learner.pull_arm(env, t)
 
     # 2) Consider one candidate and run the hypothesis test.
-    best_candidate = 0
-    for i in range(1, n_arms):
-        alternative = i
+    best_candidate = learner.best_candidate(min_confidence)
 
-        Z = learner.z(best_candidate, alternative)
-        p_value = stats.norm.sf(Z)
-        if 1 - p_value <= min_confidence:
-            # TODO current implementation: compute alternative test
-            # TODO ensure that, in this case, I need to do that or whether I should just take the alternative, i.e., best_candidate = alternative
-            Z = learner.z(alternative, best_candidate)
-            p_value = stats.norm.sf(Z)
+    # 3) Exploitation: I found the best pricing, compute rounds during exploration
+    for t in range(test_T, T):
+        learner.pull_arm(env, t, best_candidate)
 
-            if 1 - p_value <= min_confidence:
-                print("mierda")
-                raise ValueError("Test scannellato: ne uno ne l'altro")
-            else:
-                best_candidate = alternative
-        # else: # h1 is true, i.e., candidate_1 = candidate_h0 is the best
-
-        # TODO show regret
-
-    # I found best candidate. Now compare with optimal solution to compute regret and rewards over time, i.e., run for remaining horizon
+    # plot regret and reward, aka the learner
+    learner.plot(env)
 
 
 
