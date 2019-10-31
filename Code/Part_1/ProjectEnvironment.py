@@ -1,11 +1,9 @@
-import math
-
 import numpy as np
 import matplotlib.pyplot as plt
 
 from Code.Part_1.Environment import Environment
 
-season_length = 360
+season_length = 720
 number_of_seasons = 4
 
 class ProjectEnvironment(Environment):
@@ -16,6 +14,7 @@ class ProjectEnvironment(Environment):
         self.sigma = sigma
         self.users = [User(i, arms, parameters, self.sigma) for i,parameters in enumerate(matrix_parameters)]
         self.regret = []
+        self.real_rewards = []
 
     def round(self, pulled_arm, t):
         choices = [i for i in range(len(self.users))]
@@ -26,6 +25,7 @@ class ProjectEnvironment(Environment):
         real_reward = real_sample * pulled_arm
         optimum, optimum_arm = self.users[user].optimum(t)
         self.regret.append(optimum - real_reward)
+        self.real_rewards.append(real_reward)
         return reward, user  # reward
 
     def season(self, t):
