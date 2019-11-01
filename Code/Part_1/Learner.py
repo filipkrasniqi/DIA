@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 
 class Learner():
 
-    def __init__(self,arms, n_users = 3):
+    def __init__(self,arms, n_users = 3, window = None):
+        self.window = window
         self.n_arms = len(arms)
         self.arms = arms
         self.t = 0
@@ -26,6 +27,28 @@ class Learner():
 
     def num_samples(self, arm):
         return len(self.rewards_per_arm[arm])
+
+    def avg_bounds(self, users, alpha):
+        N = np.sum([self.user_samples[user] for user in users])# / tot_num_samples
+        rewards_user = [r for u, r in zip(self.drawn_user, self.collected_rewards) if u in users]
+        mu, std = np.mean(rewards_user), np.std(rewards_user)
+        t_dist = np.random.standard_t(N-1)
+        quantile = np.quantile(t_dist, 1-alpha)
+        delta = quantile * std / np.power(N, 0.5)
+        return mu - delta, mu + delta
+
+    # Computed with approach explained here: http://math.mit.edu/~goemans/18310S15/chernoff-notes.pdf
+    # i.e., Chernoff bound for bernoulli distribution
+    def prob_lower_bound(self, users, alpha):
+        tot_num_samples = (np.sum(self.user_samples))
+        num_user = np.sum([self.user_samples[user] for user in users])# / tot_num_samples
+        '''
+        TODO implementazione sul lower tail
+        delta = np.power(np.log10(1/alpha) * 2 / num_user, 0.5)
+        return (1 - delta) * num_user
+        '''
+        delta = np.power(np.log(2 / alpha) * 3 / num_user, 0.5)
+        return ((1 - delta) * num_user ) / tot_num_samples
 
     def pull_arm(self, env, t, idx_arm = None):
         if idx_arm is None:
