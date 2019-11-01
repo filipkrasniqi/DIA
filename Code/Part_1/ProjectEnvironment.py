@@ -16,6 +16,7 @@ class ProjectEnvironment(Environment):
         self.regret = []
         self.real_rewards = []
 
+    # TODO change. Need to define how to create the function depending on the context
     def round(self, pulled_arm, t):
         choices = [i for i in range(len(self.users))]
         user = np.random.choice(choices, 1, self.probabilities)[0]
@@ -34,7 +35,6 @@ class ProjectEnvironment(Environment):
     def plot(self):
         for u in self.users:
             u.plot()
-
 
 class User():
     def __init__(self, idx, arms, parameters, sigma):
