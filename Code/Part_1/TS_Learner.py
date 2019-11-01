@@ -15,7 +15,6 @@ class TS_Learner(Learner):
 
     def update(self,pulled_arm,reward, user):
         self.t += 1
-        # TODO not ok to compute with reward. We must just add whether choice was correct or not to correct (alfa, beta)
         self.update_observations(pulled_arm,reward, user)
         self.beta_parameters[pulled_arm,0] = self.beta_parameters[pulled_arm,0] + reward
         self.beta_parameters[pulled_arm,1] = self.beta_parameters[pulled_arm,1] + 1.0 - reward
