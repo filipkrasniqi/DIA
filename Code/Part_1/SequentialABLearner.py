@@ -4,13 +4,14 @@ import numpy as np
 import scipy.stats as stats
 
 from Code.Part_1.Learner import Learner
-import matplotlib.pyplot as plt
 
 
 class SequentialABLearner(Learner):
 
-    def __init__(self, arms):
+    def __init__(self, arms, t_start_exploit, min_confidence):
         Learner.__init__(self, arms)
+        self.t_start_exploit = t_start_exploit
+        self.min_confidence = min_confidence
         self.average_rewards = [0 for _ in range(self.n_arms)]
         self.rewards_variance = [0 for _ in range(self.n_arms)]
 
@@ -42,52 +43,17 @@ class SequentialABLearner(Learner):
             arm2)
         return (m1 - m2) / (math.pow((self.rewards_variance[arm1] / n1 + self.rewards_variance[arm2] / n2), 0.5))
 
-    def plot(self, env):
-        # plot regret, i.e., for t in T -> optimum - real_reward(t)
-        regret_history = env.regret
-        # plot cumulative regret, i.e., just sum the one before
-        cumulative_regret_history = []
-        cum_regret = 0
-        for r in regret_history:
-            cum_regret += r
-            cumulative_regret_history.append(cum_regret)
-        # plot real reward(t)
-        real_rewards = env.real_rewards
-        print(len(regret_history), len(cumulative_regret_history), len(real_rewards))
-        x = list(range(len(real_rewards)))
-
-        plt.plot(x, real_rewards)
-        plt.title("Reward over time")
-        plt.xlabel("t")
-        plt.xlim((0, np.max(x)))
-        plt.ylim(0, np.max(real_rewards))
-        plt.ylabel("Reward")
-        plt.show()
-
-        plt.plot(x, regret_history)
-        plt.title("Regret over time")
-        plt.xlabel("t")
-        plt.xlim((0, np.max(x)))
-        plt.ylim(0, np.max(regret_history))
-        plt.ylabel("Regret")
-        plt.show()
-
-        plt.plot(x, cumulative_regret_history)
-        plt.title("Cumulative regret over time")
-        plt.xlabel("t")
-        plt.xlim((0, np.max(x)))
-        plt.ylim(0, np.max(cumulative_regret_history))
-        plt.ylabel("Cumulative regret")
-        plt.show()
-
-    def pull_arm(self, env, t, idx_arm = None):
-        if idx_arm is None:
+    def pull_arm(self, env, t):
+        if t < self.t_start_exploit:
             idx_arm = np.random.choice(list(range(self.n_arms)), 1)[0]
-        arm = self.arms[idx_arm]
-        reward, user = env.round(arm, t)
-        self.update(idx_arm, reward, user)
+        else:
+            idx_arm = self.best_candidate()
+        Learner.pull_arm(self, env, t, idx_arm)
+        return idx_arm
 
-    def best_candidate(self, min_confidence = 0.95):
+    def best_candidate(self, min_confidence = None):
+        if min_confidence is None:
+            min_confidence = self.min_confidence
         '''
         variance = learner.get_variance()
         # TODO why to compute n_candidates?
