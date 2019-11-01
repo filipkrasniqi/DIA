@@ -5,8 +5,7 @@ from Code.Part_1.Learner import Learner
 
 class UCB_Learner(Learner):
     def __init__(self,arms, window = None):
-        super().__init__(arms)
-        self.window = window
+        super().__init__(arms, window=window)
         # Upper Bound = AVG reward + Delta
         self.average_rewards = np.zeros(self.n_arms)
         self.delta = np.zeros(self.n_arms)
