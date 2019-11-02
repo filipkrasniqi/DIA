@@ -2,19 +2,20 @@ import numpy as np
 
 from Code.Part_1.Learner import Learner
 
+
 class TS_Learner(Learner):
-    def __init__(self,arms):
+    def __init__(self, arms):
         super().__init__(arms)
         # 2 parameter for each arm
-        self.beta_parameters = np.ones((self.n_arms,2))
+        self.beta_parameters = np.ones((self.n_arms, 2))
 
     def pull_arm(self, env, t):
-        idx_arm = np.argmax(np.random.beta(self.beta_parameters[:,0],self.beta_parameters[:,1]))
+        idx_arm = np.argmax(np.random.beta(self.beta_parameters[:, 0], self.beta_parameters[:, 1]))
         Learner.pull_arm(self, env, t, idx_arm)
         return idx_arm
 
-    def update(self,pulled_arm,reward, user):
+    def update(self, pulled_arm, reward, user):
         self.t += 1
-        self.update_observations(pulled_arm,reward, user)
-        self.beta_parameters[pulled_arm,0] = self.beta_parameters[pulled_arm,0] + reward
-        self.beta_parameters[pulled_arm,1] = self.beta_parameters[pulled_arm,1] + 1.0 - reward
+        self.update_observations(pulled_arm, reward, user)
+        self.beta_parameters[pulled_arm, 0] = self.beta_parameters[pulled_arm, 0] + reward
+        self.beta_parameters[pulled_arm, 1] = self.beta_parameters[pulled_arm, 1] + 1.0 - reward

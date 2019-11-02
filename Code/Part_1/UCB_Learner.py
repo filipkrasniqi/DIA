@@ -3,8 +3,9 @@ import math
 
 from Code.Part_1.Learner import Learner
 
+
 class UCB_Learner(Learner):
-    def __init__(self,arms, window = None):
+    def __init__(self, arms, window=None):
         super().__init__(arms, window=window)
         # Upper Bound = AVG reward + Delta
         self.average_rewards = np.zeros(self.n_arms)
@@ -29,5 +30,6 @@ class UCB_Learner(Learner):
             n = self.window
         idxs = list(range(tot_n - n, tot_n))
 
-        self.average_rewards[pulled_arm] = np.sum([r for i, r in enumerate(self.rewards_per_arm[pulled_arm]) if i in idxs]) / n
+        self.average_rewards[pulled_arm] = np.sum(
+            [r for i, r in enumerate(self.rewards_per_arm[pulled_arm]) if i in idxs]) / n
         self.delta[pulled_arm] = math.sqrt(2 * math.log(self.t) / n)

@@ -3,9 +3,10 @@ from abc import abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class Learner():
 
-    def __init__(self,arms, n_users = 3, window = None):
+    def __init__(self, arms, n_users=3, window=None):
         self.window = window
         self.n_arms = len(arms)
         self.arms = arms
@@ -15,10 +16,10 @@ class Learner():
         self.drawn_user = np.array([])
         self.user_samples = [0 for _ in range(n_users)]  # samples drawn for each user
 
-    def update_observations(self,pulled_arm,reward, user):
+    def update_observations(self, pulled_arm, reward, user):
         self.rewards_per_arm[pulled_arm].append(reward)
         self.user_samples[user] += 1
-        self.collected_rewards = np.append(self.collected_rewards,reward)
+        self.collected_rewards = np.append(self.collected_rewards, reward)
         self.drawn_user = np.append(self.drawn_user, user)
 
     def get_collected_rewards_user(self, user):
@@ -29,11 +30,11 @@ class Learner():
         return len(self.rewards_per_arm[arm])
 
     def avg_bounds(self, users, alpha):
-        N = np.sum([self.user_samples[user] for user in users])# / tot_num_samples
+        N = np.sum([self.user_samples[user] for user in users])  # / tot_num_samples
         rewards_user = [r for u, r in zip(self.drawn_user, self.collected_rewards) if u in users]
         mu, std = np.mean(rewards_user), np.std(rewards_user)
-        t_dist = np.random.standard_t(N-1)
-        quantile = np.quantile(t_dist, 1-alpha)
+        t_dist = np.random.standard_t(N - 1)
+        quantile = np.quantile(t_dist, 1 - alpha)
         delta = quantile * std / np.power(N, 0.5)
         return mu - delta, mu + delta
 
@@ -41,16 +42,16 @@ class Learner():
     # i.e., Chernoff bound for bernoulli distribution
     def prob_lower_bound(self, users, alpha):
         tot_num_samples = (np.sum(self.user_samples))
-        num_user = np.sum([self.user_samples[user] for user in users])# / tot_num_samples
+        num_user = np.sum([self.user_samples[user] for user in users])  # / tot_num_samples
         '''
         TODO implementazione sul lower tail
         delta = np.power(np.log10(1/alpha) * 2 / num_user, 0.5)
         return (1 - delta) * num_user
         '''
         delta = np.power(np.log(2 / alpha) * 3 / num_user, 0.5)
-        return ((1 - delta) * num_user ) / tot_num_samples
+        return ((1 - delta) * num_user) / tot_num_samples
 
-    def pull_arm(self, env, t, idx_arm = None):
+    def pull_arm(self, env, t, idx_arm=None):
         if idx_arm is None:
             raise ValueError("No arm specified")
         arm = self.arms[idx_arm]
@@ -100,4 +101,3 @@ class Learner():
     @abstractmethod
     def update(self, pulled_arm, reward, user):
         pass
-
