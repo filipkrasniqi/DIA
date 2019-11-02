@@ -17,9 +17,7 @@ class ContextLearner:
     def get_learner(self, idx_learner):
         return self.learners[idx_learner]
 
-    def pull_arm(self, env, t):
-        user = env.sample_user()
+    def pull_arm(self, t, rewards_per_arm, user):
         idx_learner = [i for i, s in enumerate(self.subcontexts) if user in s][0]
-        idx_arm = self.learners[idx_learner].pull_arm(env, t, user)
+        idx_arm = self.learners[idx_learner].pull_arm(rewards_per_arm, user, t)
         return idx_arm
-
