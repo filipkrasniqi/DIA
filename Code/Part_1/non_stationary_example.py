@@ -23,11 +23,11 @@ for e in range(0,n_experiments):
 
     for t in range(0,T):
         pulled_arm = ts_learner.pull_arm()
-        reward = ts_env.round(pulled_arm)
+        reward = ts_env.execute_round(pulled_arm)
         ts_learner.update(pulled_arm,reward)
 
         pulled_arm = swts_learner.pull_arm()
-        reward = swts_env.round(pulled_arm)
+        reward = swts_env.execute_round(pulled_arm)
         swts_learner.update(pulled_arm, reward)
 
     ts_reward_per_experiment.append(ts_learner.collected_rewards)

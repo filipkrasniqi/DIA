@@ -20,12 +20,12 @@ for e in range(0,n_experiments):
     for t in range(0,T):
         # Thompson Sampling
         pulled_arm = ts_learner.pull_arm()
-        reward = env.round(pulled_arm)
+        reward = env.execute_round(pulled_arm)
         ts_learner.update(pulled_arm,reward)
 
         # Greedy Learner
         pulled_arm = gr_learner.pull_arm()
-        reward = env.round(pulled_arm)
+        reward = env.execute_round(pulled_arm)
         gr_learner.update(pulled_arm, reward)
 
     ts_rewards_per_experiment.append(ts_learner.collected_rewards)
