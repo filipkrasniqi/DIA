@@ -8,34 +8,108 @@ number_of_seasons = 4
 
 
 class ProjectEnvironment(Environment):
-    def __init__(self, arms, probabilities, sigma, matrix_parameters):
+    def __init__(self, arms, probabilities, sigma, context_matrix_parameters, context_alternatives):
         self.arms = arms
         self.n_arms = len(self.arms)
         self.probabilities = probabilities
         self.sigma = sigma
-        self.users = [User(i, arms, parameters, self.sigma) for i, parameters in enumerate(matrix_parameters)]
+        """
+        List of contexts.
+        A single context is a list of subcontexts.
+        A single subcontexts is a list of users.
+        Each subcontext is associated to a function to learn.
+        """
+        self.contexts = []
+        for idx_c, context_parameters in enumerate(context_matrix_parameters):
+            self.contexts.append([])
+            for idx_s, subcontext_parameters in enumerate(context_parameters):
+                self.contexts[idx_c].append(User(idx_s, arms, subcontext_parameters, sigma))
         self.regret = []
         self.real_rewards = []
+        self.drawn_users = []
+        self.selected_context = 0
+        self.contexts_alternatives = context_alternatives
+        self.all_rewards = []  # list of arrays. Each array contains <#arms> values
 
-    # TODO change. Need to define how to create the function depending on the context
-    def round(self, pulled_arm, t):
-        choices = [i for i in range(len(self.users))]
-        user = np.random.choice(choices, 1, self.probabilities)[0]
-        sample = self.users[user].update_samples(pulled_arm, t)  # demand
-        reward = sample * pulled_arm
-        real_sample = self.users[user].demand(pulled_arm, t)
+    def set_context(self, selected_context):
+        self.selected_context = selected_context
+
+    def probabilities_context(self, context):
+        choices = list(range(len(self.contexts[context])))
+        probabilities_context = [0 for _ in choices]
+        subcontexts = self.contexts_alternatives[context]
+        for idx_u, p in enumerate(self.probabilities):
+            idx_s_containing_u = [idx for idx, s in enumerate(subcontexts) if idx_u in s][0]
+            probabilities_context[idx_s_containing_u] += p
+        return probabilities_context
+
+    """
+    Execute round. Sequentially:
+    - 
+    """
+
+    def round(self, t, user=None):
+        choices = [i for i in range(len(self.contexts[self.selected_context]))]
+        probabilities_context = self.probabilities_context(self.selected_context)
+        users = self.contexts[self.selected_context]
+        if user is None:
+            user = np.random.choice(choices, 1, probabilities_context)[0]
+        samples = []
+        for arm in self.arms:
+            samples.append(users[user].update_samples(arm, t) * arm)  # demand
+        self.all_rewards.append(samples)
+        return samples, user
+
+    def round_for_arm(self, pulled_arm, t, user=None):
+        choices = [i for i in range(len(self.contexts[self.selected_context]))]
+        users = self.contexts[self.selected_context]
+        subcontexts = self.contexts_alternatives[self.selected_context]
+        if user is None:
+            user = np.random.choice(choices, 1, self.probabilities)[0]
+        subcontext = self.get_subcontext_from_user(subcontexts, user)
+        idx_arm = [idx_arm for idx_arm, arm in enumerate(self.arms) if arm == pulled_arm][0]
+        reward = self.all_rewards[-1][idx_arm]
+        real_sample = users[subcontext].demand(pulled_arm, t)
         real_reward = real_sample * pulled_arm
-        optimum, optimum_arm = self.users[user].optimum(t)
-        self.regret.append(optimum - real_reward)
+        contexts_optimals = []
+        for idx_c, context in enumerate(self.contexts):
+            context_optimal = 0
+            for user, p in zip(context, self.probabilities_context(idx_c)):
+                optimum, optimum_arm = user.optimum(t)
+                context_optimal += p * optimum
+            contexts_optimals.append(context_optimal)
+        best_context = np.max(contexts_optimals)
+        self.regret.append(best_context - real_reward)
         self.real_rewards.append(real_reward)
-        return reward, user  # reward
+        self.drawn_users.append(user)
+        return reward, user
+
+    def sample_subcontext(self):
+        subcontexts = self.contexts_alternatives[self.selected_context]
+        user = np.random.choice([i for i in range(len(self.probabilities))], 1, self.probabilities)[0]
+        subcontext = self.get_subcontext_from_user(subcontexts, user)
+        return subcontext, user
+
+    def get_subcontext_from_user(self, subcontexts, user):
+        return [idx_s for idx_s, subcontext in enumerate(subcontexts) if user in subcontext][0]
+
+    def get_last_round(self, pulled_arm, t):
+        user = self.drawn_users[-1]
+        return self.users[user].samples[-1], user
 
     def season(self, t):
         return int((t % 365) / season_length)
 
     def plot(self):
-        for u in self.users:
+        users = self.contexts[self.selected_context]
+        for u in users:
             u.plot()
+
+
+"""
+A single user identifies a function.
+In case of contexts, it may be associated to a set of users.
+"""
 
 
 class User():
@@ -46,6 +120,9 @@ class User():
         self.idx = idx
         self.arms = arms
         self.n_arms = len(self.arms)
+
+    def n_samples(self):
+        return len(self.samples)
 
     def update_samples(self, price, t):
         sample = self.noised_demand(price, t)

@@ -9,10 +9,9 @@ class TS_Learner(Learner):
         self.average_rewards = [0 for _ in range(self.n_arms)]
         self.rewards_variance = [float("+inf") for _ in range(self.n_arms)]
 
-    def pull_arm(self, env, t):
+    def pull_arm(self, rewards_per_arm, user, t):
         idx_arm = np.argmax(np.random.normal(self.average_rewards, np.power(self.rewards_variance, 0.5)))
-        Learner.pull_arm(self, env, t, idx_arm)
-        return idx_arm
+        return Learner.pull_arm(self, rewards_per_arm, user, t, idx_arm)
 
     def update(self, pulled_arm, reward, user):
         self.t += 1

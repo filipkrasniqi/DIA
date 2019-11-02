@@ -11,13 +11,12 @@ class UCB_Learner(Learner):
         self.average_rewards = np.zeros(self.n_arms)
         self.delta = np.zeros(self.n_arms)
 
-    def pull_arm(self, env, t):
+    def pull_arm(self, rewards_per_arm, user, t):
         if (self.t < self.n_arms):
             idx_arm = self.t
         else:
             idx_arm = np.argmax(self.average_rewards + self.delta)
-        Learner.pull_arm(self, env, t, idx_arm)
-        return idx_arm
+        return Learner.pull_arm(self, rewards_per_arm, user, t, idx_arm)
 
     def update(self, pulled_arm, reward, user):
         self.t += 1

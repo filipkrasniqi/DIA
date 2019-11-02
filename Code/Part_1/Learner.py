@@ -38,24 +38,37 @@ class Learner():
         delta = quantile * std / np.power(N, 0.5)
         return mu - delta, mu + delta
 
+    def avg_bounds_fixed(self, alpha):
+        N = np.sum(self.user_samples)  # / tot_num_samples
+        rewards_user = [r for u, r in zip(self.drawn_user, self.collected_rewards)]
+        mu, std = np.mean(rewards_user), np.std(rewards_user)
+        t_dist = np.random.standard_t(N - 1)
+        quantile = np.quantile(t_dist, 1 - alpha)
+        delta = quantile * std / np.power(N, 0.5)
+        return mu - delta, mu + delta
+
     # Computed with approach explained here: http://math.mit.edu/~goemans/18310S15/chernoff-notes.pdf
     # i.e., Chernoff bound for bernoulli distribution
     def prob_lower_bound(self, users, alpha):
-        tot_num_samples = (np.sum(self.user_samples))
+        tot_num_samples = np.sum(self.user_samples)
         num_user = np.sum([self.user_samples[user] for user in users])  # / tot_num_samples
+        delta = np.power(np.log10(1 / alpha) * 2 / num_user, 0.5)
+        return ((1 - delta) * num_user) / tot_num_samples
         '''
-        TODO implementazione sul lower tail
-        delta = np.power(np.log10(1/alpha) * 2 / num_user, 0.5)
-        return (1 - delta) * num_user
-        '''
+        TODO implementazione con modulo (vedi pdf)
         delta = np.power(np.log(2 / alpha) * 3 / num_user, 0.5)
         return ((1 - delta) * num_user) / tot_num_samples
+        '''
 
-    def pull_arm(self, env, t, idx_arm=None):
+    def prob_lower_bound_fixed(self, alpha):
+        num_user = np.sum(self.user_samples)  # / tot_num_samples
+        delta = np.power(np.log10(1 / alpha) * 2 / num_user, 0.5)
+        return (1 - delta) * num_user
+
+    def pull_arm(self, rewards_per_arm, user, t, idx_arm=None):
         if idx_arm is None:
             raise ValueError("No arm specified")
-        arm = self.arms[idx_arm]
-        reward, user = env.round(arm, t)
+        reward = rewards_per_arm[idx_arm]
         self.update(idx_arm, reward, user)
         return idx_arm
 
@@ -100,4 +113,8 @@ class Learner():
 
     @abstractmethod
     def update(self, pulled_arm, reward, user):
+        pass
+
+    @abstractmethod
+    def get_best_arm(self):
         pass
