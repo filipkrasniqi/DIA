@@ -6,9 +6,13 @@ there is a learner
 
 
 class ContextLearner:
-    def __init__(self, subcontexts, learner_constructor, arms, window_length=None):
+    def __init__(self, subcontexts, learner_constructor, arms, window_length=None, idx_c = -1):
         self.subcontexts = subcontexts
-        self.learners = [learner_constructor(arms, window_length) for s in subcontexts]
+        self.learners = [learner_constructor(arms, window_length, idx_c, idx_s) for idx_s, s in enumerate(subcontexts)]
+        self.idx_c = idx_c
+
+    def getNumberLearners(self):
+        return len(self.learners)
 
     def update(self, arm, reward, user):
         idx_learner = [i for i, s in enumerate(self.subcontexts) if user in s][0]
@@ -18,6 +22,9 @@ class ContextLearner:
         return self.learners[idx_learner]
 
     def pull_arm(self, t, rewards_per_arm, user):
-        idx_learner = [i for i, s in enumerate(self.subcontexts) if user in s][0]
-        idx_arm = self.learners[idx_learner].pull_arm(rewards_per_arm, user, t)
-        return idx_arm
+        idx_arms = []
+        for reward, user in zip(rewards_per_arm, user):
+            idx_learner = [i for i, s in enumerate(self.subcontexts) if user in s][0]
+            idx_arm = self.learners[idx_learner].pull_arm(rewards_per_arm, user, t)
+            idx_arms.append(idx_arm)
+        return idx_arms
