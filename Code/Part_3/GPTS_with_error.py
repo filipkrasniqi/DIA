@@ -1,7 +1,7 @@
 # gaussian error (punto 4)
 
 from Code.Part_3.GPTS_Learner import *
-from Code.Part_3.Environment import *
+from Code.Part_3.Environment_vecchio import *
 
 np.seterr(divide='ignore')
 n_arms = 20

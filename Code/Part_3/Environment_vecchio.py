@@ -194,11 +194,3 @@ class Environment:
     def plot(self):
         for s in range(0, self.n_subcampaigns):
             self.subcampaigns[s].plot()
-
-
-'''user = User(max_budget=70, bid=10, slope=-0.1)
-user.plot()
-
-subc = Subcampaign(n_users=2, prob_users=[0.5, 0.5], max_budget=70, bid=10, daily_budget_values=[10, 20, 30])
-subc.plot()
-'''
