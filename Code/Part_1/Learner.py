@@ -4,9 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-class Learner():
+class Learner:
 
-    def __init__(self, arms, n_users=3, window=None):
+    def __init__(self, arms, n_users=3, window=None, idx_c = -1, idx_s = -1):
         self.window = window
         self.n_arms = len(arms)
         self.arms = arms
@@ -15,6 +15,8 @@ class Learner():
         self.collected_rewards = np.array([])
         self.drawn_user = np.array([])
         self.user_samples = [0 for _ in range(n_users)]  # samples drawn for each user
+        self.idx_c = idx_c
+        self.idx_s = idx_s
 
     def update_observations(self, pulled_arm, reward, user):
         self.rewards_per_arm[pulled_arm].append(reward)
@@ -43,7 +45,7 @@ class Learner():
         rewards_user = [r for u, r in zip(self.drawn_user, self.collected_rewards)]
         mu, std = np.mean(rewards_user), np.std(rewards_user)
         t_dist = np.random.standard_t(N - 1)
-        quantile = np.quantile(t_dist, 1 - alpha)
+        quantile = np.quantile(t_dist, 1 - alpha/2)
         delta = quantile * std / np.power(N, 0.5)
         return mu - delta, mu + delta
 
