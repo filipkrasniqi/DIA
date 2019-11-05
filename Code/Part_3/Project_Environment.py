@@ -1,5 +1,4 @@
 import numpy as np
-import matplotlib.pyplot as plt
 
 class ProjectEnvironment:
     def __init__(self, n_camp, n_subs, prob_subs,bids, slopes, sigmas):
@@ -7,20 +6,21 @@ class ProjectEnvironment:
 
     def get_sigle_campaign(self,camp):
         return self.campaign[camp]
+
 '''
 A Campaign is composed by 3 different subcampaign
 '''
 class Campaign:
-    def __init__(self, n_sub,prob_sub,bids,slopes,sigma):
-        self.sub_campaign = [SubCampaign(bids[i],slopes[i],sigma) for i in range(0,n_sub)]
-        self.sigma = sigma
+    def __init__(self, n_sub,prob_sub,bids,slopes,sigmas):
+        self.sub_campaign = [SubCampaign(bids[i],slopes[i],sigmas[i]) for i in range(0,n_sub)]
+        self.sigma = np.max(sigmas)
         self.prob_sub = prob_sub
 
     def get_clicks_real_aggregate(self,bid):
         return  np.sum( sub.get_clicks_real(bid)*self.prob_sub[i] for i,sub in enumerate(self.sub_campaign) )
 
     def get_clicks_noise_aggregate (self,bid):
-        y = self.get_clicks_real(bid)
+        y = self.get_clicks_real_aggregate(bid)
         mu, sigma = 0, self.sigma
         sample = np.random.normal(mu, sigma)
         return max(0, y + sample)
