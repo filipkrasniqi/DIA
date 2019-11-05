@@ -1,5 +1,5 @@
-from Part_3.GPTS_Learner import *
-from Part_3.Environment import *
+from Code.Part_3.GPTS_Learner import *
+from Code.Part_3.Environment import *
 
 n_arms = 20
 min_daily_budget = 0.0
