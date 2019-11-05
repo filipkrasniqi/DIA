@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import scipy.stats as stats
+import functools
 
 from Code.Part_1.ContextLearner import ContextLearner
 from Code.Part_1.ProjectEnvironment import ProjectEnvironment as Environment
@@ -10,18 +11,28 @@ from Code.Part_1.ContinuousTS_Learner import TS_Learner
 from Code.Part_1.UCB_Learner import UCB_Learner
 
 probabilities = [0.4, 0.3, 0.3]
-sigma_env_n = [2]
-T = 600
+sigma_env_n = [32]
+T = 128
+context_change_period = 7
+batch_size = 16
 
-
-def linear(t):
+def identity(t):
     return 1
+
+def linear(m, q, t):
+    return ((t % context_change_period) + 1) * m + q
+
+def sigmoid(t):
+    return 1 / (1 + math.exp(-t/10000))
+
+def cos(D, t):
+    return -1*D*(math.cos(t*2*3.14*context_change_period))# + D*(math.sin(t*10)) + D*(math.sin(t*10) ** 2)# (-1/D)*(t%context_change_period)**2# D*(math.cos(t*10)) + D*(math.sin(t*10)) + D*(math.sin(t*10) ** 2)
 
 
 matrix_parameters = [
-    [[0.01, 200, linear], [0.01, 200, linear], [0.01, 200, linear], [0.01, 200, linear]],
-    [[0.01, 300, linear], [0.02, 300, linear], [0.02, 300, linear], [0.02, 300, linear]],
-    [[0.01, 200, linear], [0.02, 200, linear], [0.02, 200, linear], [0.02, 200, linear]]
+    [
+        [[0.01, 200, identity], [0.01, 200, identity], [0.01, 200, identity], [0.01, 200, identity]]
+    ]
 ]
 
 context_alternatives = [[[0], [1], [2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], [0]], [[0, 1, 2]]]
@@ -29,24 +40,24 @@ context_alternatives = [[[0], [1], [2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], 
 
 context_matrix_parameters = [
     [
-        [[0.1, 10, linear], [0.1, 10, linear], [0.1, 10, linear], [0.1, 10, linear]],
-        [[0.1, 10, linear], [0.1, 10, linear], [0.1, 10, linear], [0.1, 10, linear]],
-        [[0.1, 10, linear], [0.1, 10, linear], [0.1, 10, linear], [0.1, 10, linear]]
+        [[0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)]],
+        [[0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)]],
+        [[0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)]]
     ],
     [
-        [[0.1, 400, linear], [0.1, 400, linear], [0.1, 400, linear], [0.1, 400, linear]],
-        [[0.1, 400, linear], [0.1, 400, linear], [0.1, 400, linear], [0.1, 400, linear]]
+        [[0.02, 400, identity], [0.02, 400, identity], [0.02, 400, identity], [0.02, 400, identity]],
+        [[0.02, 400, identity], [0.02, 400, identity], [0.02, 400, identity], [0.02, 400, identity]]
     ],
     [
-        [[0.1, 300, linear], [0.1, 300, linear], [0.1, 300, linear], [0.1, 300, linear]],
-        [[0.1, 300, linear], [0.1, 300, linear], [0.1, 300, linear], [0.1, 300, linear]]
+        [[0.02, 300, identity], [0.02, 300, identity], [0.02, 300, identity], [0.02, 300, identity]],
+        [[0.02, 300, identity], [0.02, 300, identity], [0.02, 300, identity], [0.02, 300, identity]]
     ],
     [
-        [[0.1, 200, linear], [0.1, 200, linear], [0.1, 200, linear], [0.1, 200, linear]],
-        [[0.1, 200, linear], [0.1, 200, linear], [0.1, 200, linear], [0.1, 200, linear]]
+        [[0.02, 200, identity], [0.02, 200, identity], [0.02, 200, identity], [0.02, 200, identity]],
+        [[0.02, 200, identity], [0.02, 200, identity], [0.02, 200, identity], [0.02, 200, identity]]
     ],
     [
-        [[0.1, 1, linear], [0.1, 1, linear], [0.1, 1, linear], [0.1, 1, linear]]
+        [[0.02, 10, functools.partial(cos, 10)], [0.02, 10, functools.partial(cos, 10)], [0.02, 10, functools.partial(cos, 10)], [0.02, 10, functools.partial(cos, 10)]]
     ]
 ]
 
@@ -70,11 +81,12 @@ do_TS = False
 
 do_UCB_wdw = False
 do_TS_wdw = False
+plot_env = True
 
 
 def train(learner):
     for sigma in sigma_env_n:
-        env = Environment(arms, probabilities, sigma, matrix_parameters)
+        env = Environment(arms, probabilities, sigma, matrix_parameters, context_alternatives = [[0, 1, 2]])
         for t in range(T):
             learner.pull_arm(env, t)
         learner.plot(env)
@@ -83,13 +95,26 @@ def train(learner):
 def train_context(learner_constructor, arms, window_length=None):
     c_learners = []
     best_context = 0
-    for alternative in context_alternatives:
-        c_learners.append(ContextLearner(alternative, learner_constructor, arms, window_length))
+    for idx_c, alternative in enumerate(context_alternatives):
+        c_learners.append(ContextLearner(alternative, learner_constructor, arms, window_length, idx_c))
     for sigma in sigma_env_n:
-        env = Environment(arms, probabilities, sigma, context_matrix_parameters, context_alternatives)
-        env.plot()
+        env = Environment(arms, probabilities, sigma, context_matrix_parameters, context_alternatives, batch_size=batch_size)
         for t in range(T):
-            if t % 33 == 32:
+            if plot_env:
+                env.plot(4)
+
+            rewards_per_arm, subcontexts, users = env.round_context(t)
+            idxs_arm_current_clearner = 0
+            subcontext_current_clearner = None
+            for idx_c, (c_learner, rewards, user, subcontext) in enumerate(zip(c_learners, rewards_per_arm, users, subcontexts)):
+                idxs_arm = c_learner.pull_arm(t, rewards, user)
+                if idx_c == best_context:
+                    idxs_arm_current_clearner = idxs_arm
+                    subcontext_current_clearner = subcontext
+            # ora lo faccio sul serio!
+            env.round_for_arm(idxs_arm_current_clearner, t, subcontext_current_clearner)
+
+            if t % context_change_period == context_change_period - 1:
                 results_alternatives = []
                 for idx_c, context in enumerate(context_alternatives):
                     learners = c_learners[idx_c]
@@ -97,7 +122,7 @@ def train_context(learner_constructor, arms, window_length=None):
                     sum = 0
                     for idx_s, subcontext in enumerate(context):
                         learner = learners.get_learner(idx_s)
-                        is_all = len(context) == 1
+                        is_all = learners.getNumberLearners() == 1
                         # mu, prob = learner.avg_bounds(subcontext, alpha), learner.prob_lower_bound(subcontext, 1-alpha)
                         mu, prob = learner.avg_bounds_fixed(alpha), learner.prob_lower_bound_fixed(alpha) / t
                         if is_all:
@@ -109,17 +134,7 @@ def train_context(learner_constructor, arms, window_length=None):
                 best_context = np.argmax(results_alternatives)
                 print("Best alternative: {}".format(best_context))
                 env.set_context(best_context)
-                env.plot()
-            subcontext, user = env.sample_subcontext()
-            rewards_per_arm, _ = env.round(t, subcontext)
-            idx_arm_current_clearner = 0
-            for idx_c, c_learner in enumerate(c_learners):
-                idx_arm = c_learner.pull_arm(t, rewards_per_arm, user)
-                if idx_c == best_context:
-                    idx_arm_current_clearner = idx_arm
-            # ora lo faccio sul serio!
-            env.round_for_arm(arms[idx_arm_current_clearner], t, subcontext)
-        learner.plot(env)
+        learner.plot(env, t)
 
 
 # 1) Sequential AB testing
