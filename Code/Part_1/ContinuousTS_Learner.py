@@ -4,8 +4,8 @@ from Code.Part_1.Learner import Learner
 
 
 class TS_Learner(Learner):
-    def __init__(self, arms, window=None):
-        Learner.__init__(self, arms, window=window)
+    def __init__(self, arms, window=None, idx_c=-1, idx_s=-1):
+        super().__init__(arms, window=window, idx_c=idx_c, idx_s=idx_s)
         self.average_rewards = [0 for _ in range(self.n_arms)]
         self.rewards_variance = [float("+inf") for _ in range(self.n_arms)]
 
