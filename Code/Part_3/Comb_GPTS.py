@@ -1,5 +1,5 @@
 from Code.Part_3.GPTS_Learner import *
-from Code.Part_3.Environment import *
+from Code.Part_3.Environment_vecchio import *
 from Code.Part_3.dp_algorithm import *
 import matplotlib.pyplot as plt
 import numpy as np

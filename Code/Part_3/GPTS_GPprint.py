@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 from Code.Part_3.GPTS_Learner import *
-from Code.Part_3.Environment import *
+from Code.Part_3.Environment_vecchio import *
 
 n_sub_campaign = 5
 n_users_x_sub_campaign = 3
