@@ -29,14 +29,15 @@ Change in time are:
 - smooth changes (i.e., small variation in a season)
 """
 class ProjectEnvironment(Environment):
-    def __init__(self, arms, probabilities, sigma, context_matrix_parameters, context_alternatives, batch_size = 16, season_length = 91, number_of_seasons = 4):
+    def __init__(self, arms, number_users_function, sigma, context_matrix_parameters, context_alternatives, batch_size = 16, season_length = 91, number_of_seasons = 4, num_users = 3):
         self.arms = arms
         self.n_arms = len(self.arms)
-        self.probabilities = probabilities
+        self.number_users_function = number_users_function
         self.sigma = sigma
         self.batch_size = batch_size
         self.season_length = season_length
         self.number_of_season = number_of_seasons
+        self.num_users = num_users
         """
         List of contexts.
         A single context is a list of subcontexts.
@@ -55,14 +56,28 @@ class ProjectEnvironment(Environment):
         self.contexts_alternatives = context_alternatives
         self.all_rewards = []  # list of arrays. Each array contains <#arms> values
 
-    def set_context(self, selected_context):
-        self.selected_context = selected_context
+    """
+    Returns the number of users for each of them depending on current probability function
+    """
+    def num_samples(self, t):
+        return [self.number_users_function[idx_u](t) for idx_u in list(range(self.num_users))]
 
-    def probabilities_context(self, context):
+    """
+    Returns the current probabilities for each user
+    """
+    def probabilities(self, t):
+        num_samples = self.num_samples(t)
+        sum = np.sum(num_samples)
+        return [num_sample / sum for num_sample in num_samples]
+
+    def set_context(self, selected_context):
+            self.selected_context = selected_context
+
+    def probabilities_context(self, context, t):
         choices = list(range(len(self.contexts[context])))
         probabilities_context = [0 for _ in choices]
         subcontexts = self.contexts_alternatives[context]
-        for idx_u, p in enumerate(self.probabilities):
+        for idx_u, p in enumerate(self.probabilities(t)):
             idx_s_containing_u = [idx for idx, s in enumerate(subcontexts) if idx_u in s][0]
             probabilities_context[idx_s_containing_u] += p
         return probabilities_context
@@ -77,7 +92,7 @@ class ProjectEnvironment(Environment):
         rewards, demands, sub_contexts_to_return, users_to_return = [[] for _ in self.contexts], [[] for _ in self.contexts], [[] for _ in self.contexts], [[] for _ in self.contexts]
         list_attempts = list(range(self.batch_size))
         for idx_attempt, (idx_c, context) in itertools.product(list_attempts, enumerate(self.contexts)):
-            sub_context, user = self.sample_subcontext(idx_c)
+            sub_context, user = self.sample_subcontext(t, idx_c)
             sub_contexts_to_return[idx_c].append(sub_context)
             users_to_return[idx_c].append(user)
             for arm in self.arms:
@@ -109,7 +124,7 @@ class ProjectEnvironment(Environment):
             contexts_optimals = []
             for idx_c, context in enumerate(self.contexts):
                 context_optimal = 0
-                for user, p in zip(context, self.probabilities_context(idx_c)):
+                for user, p in zip(context, self.probabilities_context(idx_c, t)):
                     optimum, optimum_arm = user.optimum(t)
                     context_optimal += p * optimum
                 contexts_optimals.append(context_optimal)
@@ -123,11 +138,12 @@ class ProjectEnvironment(Environment):
     """
     Samples given a context ID
     """
-    def sample_subcontext(self, context = None):
+    def sample_subcontext(self, t, context = None):
         if context is None:
             context = self.selected_context
         sub_contexts = self.contexts_alternatives[context]
-        user = np.random.choice([i for i in range(len(self.probabilities))], 1, self.probabilities)[0]
+        probabilities = self.probabilities(t)
+        user = np.random.choice(len(probabilities), 1, p=probabilities)[0]
         sub_context = self.get_subcontext_from_user(sub_contexts, user)
         return sub_context, user
     """
@@ -158,6 +174,73 @@ class ProjectEnvironment(Environment):
         for idx_c, users in enumerate(contexts):
             for u in users:
                 u.plot(T)
+
+    def plot_context(self, idx_context, T, t_vals = [1, 30, 60, 90], real_demand = True):
+        attempts_number = 128
+        list_attempts = list(range(attempts_number))
+        resolution = 32
+        arms_to_plot = np.linspace(0, max(self.arms), resolution)
+        demands, rewards, sub_contexts_to_return, users_to_return = [], [], [[] for _ in arms_to_plot], []
+        t_df, season_df = [], []
+        t_df_total, season_df_total = [], []
+
+        for idx_arm, arm in enumerate(arms_to_plot):
+            for idx_t, t in enumerate(t_vals):
+                demands_arm = []
+                for _ in list_attempts:
+                    sub_context, user = self.sample_subcontext(t, idx_context)
+                    sub_contexts_to_return[idx_arm].append(sub_context)
+                    users_to_return.append("Class {}".format(user))
+                    t_df_total.append(t)
+                    season_df_total.append(self.season(t))
+                    if real_demand:
+                        demand = self.contexts[idx_context][sub_context].demand(arm, t)
+                    else:
+                        demand = self.contexts[idx_context][sub_context].noised_demand(arm, t)
+                    demands_arm.append(demand)
+                avg_demand = np.mean(demands_arm)
+                demands.append(avg_demand)
+                rewards.append(avg_demand * arm)
+                t_df.append(t)
+                season_df.append(self.season(t))
+                # users_to_return[idx_t].append(user)
+
+        df = pd.DataFrame(columns=["Demand", "Time", "Season", "Price"],
+                          data={"Demand": demands, "Season": season_df, "Time": t_df,
+                                "Price": np.repeat(arms_to_plot, len(t_vals))})
+        colors_palette = [User.hue_map(t / T) for t in df.Time.unique()]
+        palette = {
+            t: colors_palette[i] for i, t in enumerate(df.Time.unique())
+        }
+        # demands = np.array(demands).reshape(len(seasons), -1)
+
+        # for t in range(T):
+        # current_df = df.where(df["Time"] == t).dropna()
+        g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
+        g = g.map(sns.lineplot, "Price", "Demand")
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.show()
+
+        df = pd.DataFrame(columns=["Time", "Season", "Class"],
+                          data={"Season": season_df_total, "Time": t_df_total,
+                                "Class": users_to_return})
+        colors_palette = [User.hue_map(t / T) for t in df.Time.unique()]
+        palette = {
+            t: colors_palette[i] for i, t in enumerate(df.Time.unique())
+        }
+        # demands = np.array(demands).reshape(len(seasons), -1)
+
+        # for t in range(T):
+        # current_df = df.where(df["Time"] == t).dropna()
+        g = sns.FacetGrid(df, size=10, col="Time", legend_out=True)
+        g = g.map(sns.countplot, "Class")
+        # for t in t_vals:
+            # current_df = df.where(df["Time"] == t).dropna()
+            # sns.countplot(data=current_df, x="Class")
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.show()
 
 
 """
@@ -202,7 +285,8 @@ class User():
     def season(self, t):
         return int((t / self.season_length)) % self.number_of_seasons
 
-    def hue_map(self, value):
+    @staticmethod
+    def hue_map(value):
         HUE_MAX = 0.9
         hue = pow(1 - value, 2) * HUE_MAX
         rgb = colors.hsv_to_rgb((hue, 1, 1))
@@ -211,8 +295,8 @@ class User():
 
     def plot(self, T):
         bins = np.linspace(0, max(self.arms))
-        delta_t = 30
-        first_t = 5
+        delta_t = 89
+        first_t = 0
         num_t = int(((T - 1) - first_t) / delta_t)
         t_bins = np.linspace(first_t, T - 1, num_t)
         t_bins = [int(t) for t in t_bins]
@@ -227,7 +311,7 @@ class User():
                 # demands.append(self.demand(p, (s + 1) * season_length, s))
 
         df = pd.DataFrame(columns=["Demand", "Time", "Season", "Price"], data = {"Demand": demands, "Season": seasons_df, "Time": t_df, "Price": np.repeat(bins, len(t_bins))})
-        colors_palette = [self.hue_map(t / T) for t in df.Time.unique()]
+        colors_palette = [User.hue_map(t / T) for t in df.Time.unique()]
         palette = {
             t:colors_palette[i] for i, t in enumerate(df.Time.unique())
         }
