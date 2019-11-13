@@ -11,53 +11,65 @@ from Code.Part_1.ContinuousTS_Learner import TS_Learner
 from Code.Part_1.UCB_Learner import UCB_Learner
 
 probabilities = [0.4, 0.3, 0.3]
-sigma_env_n = [32]
-T = 128
-context_change_period = 7
-batch_size = 16
+sigma_env_n = [1]#, 2, 4]# [1, 8, 16, 32, 64]
 
-def identity(t):
+season_length = 91
+number_of_seasons = 4
+T = 364
+context_change_period = 7
+batch_size = 8
+
+def identity(t, price):
     return 1
 
-def linear(m, q, t):
-    return ((t % context_change_period) + 1) * m + q
-
-def sigmoid(t):
-    return 1 / (1 + math.exp(-t/10000))
-
-def cos(D, t):
-    return -1*D*(math.cos(t*2*3.14*context_change_period))# + D*(math.sin(t*10)) + D*(math.sin(t*10) ** 2)# (-1/D)*(t%context_change_period)**2# D*(math.cos(t*10)) + D*(math.sin(t*10)) + D*(math.sin(t*10) ** 2)
-
+def gauss(coeff, sigma, t, mu, price):
+    x = price - mu
+    t_in_season = t % season_length + 1
+    max_coeff, min_coeff = 1, 0
+    m_t = (max_coeff - min_coeff) / (season_length - 1)
+    q_t = min_coeff - m_t
+    coeff_t = t_in_season * m_t + q_t
+    coeff_price = 1
+    exp_ = math.exp(-1 * (x ** 2) / (2 * sigma **2))
+    fraction_ =  1 / (sigma * math.pow(np.pi * 2, 0.5))
+    ret_val = coeff_price * coeff_t * coeff * fraction_ * exp_
+    return ret_val
 
 matrix_parameters = [
     [
-        [[0.01, 200, identity], [0.01, 200, identity], [0.01, 200, identity], [0.01, 200, identity]]
+        [[0.07, 200, [20, 40, 60, 80, 100], functools.partial(gauss, 75, 6)],
+         [0.02, 120, [20, 40, 60, 80, 100], functools.partial(gauss, 75, 6)],
+         [0.02, 100, [20, 40, 60, 80, 100], functools.partial(gauss, 75, 6)],
+         [0.01, 80, [20, 40, 60, 80, 100], functools.partial(gauss, 75, 8)]]
     ]
 ]
 
-context_alternatives = [[[0], [1], [2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], [0]], [[0, 1, 2]]]
+context_alternatives = [[[0, 1, 2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], [0]], [[0], [1], [2]]]
 # sbagliato ma funge: context_alternatives = [[[0, 1, 2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], [0]], [[0], [1], [2]]]
 
 context_matrix_parameters = [
     [
-        [[0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)]],
-        [[0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)]],
-        [[0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)], [0.02, 10, functools.partial(linear, 1, 1)]]
+        [[0.07, 200, 35, 35, functools.partial(gauss, 1, 1, 0)],
+         [0.02, 120, 50, 50, functools.partial(gauss, 1, 1, 0)],
+         [0.02, 100, 30, 30, functools.partial(gauss, 1, 1, 0)],
+         [0.01, 80, 50, 50, functools.partial(gauss, 1, 1, 0)]]
     ],
     [
-        [[0.02, 400, identity], [0.02, 400, identity], [0.02, 400, identity], [0.02, 400, identity]],
-        [[0.02, 400, identity], [0.02, 400, identity], [0.02, 400, identity], [0.02, 400, identity]]
+        [[0.02, 400, 20, 40, identity], [0.02, 400, 20, 40, identity], [0.02, 400, 20, 40, identity], [0.02, 400, 20, 40, identity]],
+        [[0.02, 400, 20, 40, identity], [0.02, 400, 20, 40, identity], [0.02, 400, 20, 40, identity], [0.02, 400, 20, 40, identity]]
     ],
     [
-        [[0.02, 300, identity], [0.02, 300, identity], [0.02, 300, identity], [0.02, 300, identity]],
-        [[0.02, 300, identity], [0.02, 300, identity], [0.02, 300, identity], [0.02, 300, identity]]
+        [[0.02, 300, 20, 40, identity], [0.02, 300, 20, 40, identity], [0.02, 300, 20, 40, identity], [0.02, 300, 20, 40, identity]],
+        [[0.02, 300, 20, 40, identity], [0.02, 300, 20, 40, identity], [0.02, 300, 20, 40, identity], [0.02, 300, 20, 40, identity]]
     ],
     [
-        [[0.02, 200, identity], [0.02, 200, identity], [0.02, 200, identity], [0.02, 200, identity]],
-        [[0.02, 200, identity], [0.02, 200, identity], [0.02, 200, identity], [0.02, 200, identity]]
+        [[0.02, 200, 20, 40, identity], [0.02, 200, 20, 40, identity], [0.02, 200, 20, 40, identity], [0.02, 200, 20, 40, identity]],
+        [[0.02, 200, 20, 40, identity], [0.02, 200, 20, 40, identity], [0.02, 200, 20, 40, identity], [0.02, 200, 20, 40, identity]]
     ],
     [
-        [[0.02, 10, functools.partial(cos, 10)], [0.02, 10, functools.partial(cos, 10)], [0.02, 10, functools.partial(cos, 10)], [0.02, 10, functools.partial(cos, 10)]]
+        [[0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity]],
+        [[0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity]],
+        [[0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity], [0.02, 10, 20, 40, identity]]
     ]
 ]
 
@@ -75,34 +87,52 @@ test_T = int(portion_samples_ab_testing * T)
 
 norm_dist = stats.norm(0, 1)
 z_a, z_b = norm_dist.pdf(1 - alpha), norm_dist.pdf(beta)
-do_sequential_AB = False
-do_UCB = True
+do_sequential_AB = True
+do_UCB = False
 do_TS = False
 
 do_UCB_wdw = False
 do_TS_wdw = False
-plot_env = True
+plot_env = False
 
-
-def train(learner):
+def train(learner_constructor, window_length = None):
+    single_context_alternatives = [[[0, 1, 2]]]
+    single_context_matrix_parameters = matrix_parameters
+    single_best_context = 0
+    plots_for_sigma = []
     for sigma in sigma_env_n:
-        env = Environment(arms, probabilities, sigma, matrix_parameters, context_alternatives = [[0, 1, 2]])
+        c_learners = []
+        for idx_c, alternative in enumerate(single_context_alternatives):
+            c_learners.append(ContextLearner(alternative, learner_constructor, arms, window_length, idx_c, sigma))
+        env = Environment(arms, probabilities, sigma, single_context_matrix_parameters, single_context_alternatives, batch_size=batch_size)
+        env.plot(0, T)
+        err
         for t in range(T):
-            learner.pull_arm(env, t)
-        learner.plot(env)
+            rewards_per_arm, demands_per_arm, subcontexts, users = env.round_context(t)
+            idxs_arm_current_clearner = 0
+            subcontext_current_clearner = None
+            for idx_c, (c_learner, rewards, user, subcontext, demands) in enumerate(
+                    zip(c_learners, rewards_per_arm, users, subcontexts, demands_per_arm)):
+                idxs_arm = c_learner.pull_arm(t, rewards, demands, user)
+                if idx_c == single_best_context:
+                    idxs_arm_current_clearner = idxs_arm
+                    subcontext_current_clearner = subcontext
+            # ora lo faccio sul serio!
+            env.round_for_arm(idxs_arm_current_clearner, t, subcontext_current_clearner)
+        plots_for_sigma.append(c_learners[0].learners[0].plot(env))
 
+    return plots_for_sigma
 
-def train_context(learner_constructor, arms, window_length=None):
+def train_context(learner_constructor, window_length=None):
     c_learners = []
     best_context = 0
     for idx_c, alternative in enumerate(context_alternatives):
         c_learners.append(ContextLearner(alternative, learner_constructor, arms, window_length, idx_c))
     for sigma in sigma_env_n:
         env = Environment(arms, probabilities, sigma, context_matrix_parameters, context_alternatives, batch_size=batch_size)
+        if plot_env:
+            env.plot(T=T)
         for t in range(T):
-            if plot_env:
-                env.plot(4)
-
             rewards_per_arm, subcontexts, users = env.round_context(t)
             idxs_arm_current_clearner = 0
             subcontext_current_clearner = None
@@ -134,29 +164,50 @@ def train_context(learner_constructor, arms, window_length=None):
                 best_context = np.argmax(results_alternatives)
                 print("Best alternative: {}".format(best_context))
                 env.set_context(best_context)
-        learner.plot(env, t)
+        learner.plot(env)
 
+all_plots = {}
+# Without context
 
 # 1) Sequential AB testing
 if do_sequential_AB:
-    train(learner=SequentialABLearner(arms, test_T, min_confidence))
+    plots_for_sigma = train(learner_constructor=SequentialABLearner)
 
 # 2) UCB
 if do_UCB:
-    train_context(learner_constructor=UCB_Learner, arms=arms)
-    # train(learner=UCB_Learner(arms))
+    train(learner_constructor=UCB_Learner)
 
 # 3) TS
 if do_TS:
-    train_context(learner_constructor=TS_Learner, arms=arms)
-    # train(learner=TS_Learner(arms))
+    train(learner_constructor=TS_Learner)
 
-window_length = math.pow(T, 0.5)
+window_length = int(math.pow(T, 0.5))
 
 # 4) UCB with window
 if do_UCB_wdw:
-    train(learner=UCB_Learner(arms, window_length))
+    train(learner_constructor=UCB_Learner, window_length=window_length)
 
 # 5) TS with window
 if do_TS_wdw:
-    train(learner=TS_Learner(arms, window_length))
+    train(learner_constructor=TS_Learner, window_length=window_length)
+
+do_context = False
+# With context
+# TODO sistemare funzioni di contesto
+
+if do_context:
+    # 6) UCB
+    if do_UCB:
+        train_context(learner_constructor=UCB_Learner)
+
+    # 7) TS
+    if do_TS:
+        train_context(learner_constructor=TS_Learner)
+
+    # 8) UCB with window
+    if do_UCB_wdw:
+        train_context(learner_constructor=UCB_Learner, window_length=window_length)
+
+    # 9) TS with window
+    if do_TS_wdw:
+        train_context(learner_constructor=TS_Learner, window_length=window_length)
