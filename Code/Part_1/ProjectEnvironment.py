@@ -175,7 +175,7 @@ class ProjectEnvironment(Environment):
             for u in users:
                 u.plot(T)
 
-    def plot_context(self, idx_context, T, t_vals = [1, 30, 60, 90], real_demand = True):
+    def plot_context(self, idx_context, T, t_vals = [0, 40, 80, 91, 131, 171, 182, 222, 262, 273, 313, 353], real_demand = True):
         attempts_number = 128
         list_attempts = list(range(attempts_number))
         resolution = 32
@@ -191,7 +191,7 @@ class ProjectEnvironment(Environment):
                     sub_context, user = self.sample_subcontext(t, idx_context)
                     sub_contexts_to_return[idx_arm].append(sub_context)
                     users_to_return.append("Class {}".format(user))
-                    t_df_total.append(t)
+                    t_df_total.append(t % self.season_length)
                     season_df_total.append(self.season(t))
                     if real_demand:
                         demand = self.contexts[idx_context][sub_context].demand(arm, t)
@@ -201,7 +201,7 @@ class ProjectEnvironment(Environment):
                 avg_demand = np.mean(demands_arm)
                 demands.append(avg_demand)
                 rewards.append(avg_demand * arm)
-                t_df.append(t)
+                t_df.append(t % self.season_length)
                 season_df.append(self.season(t))
                 # users_to_return[idx_t].append(user)
 
@@ -217,7 +217,7 @@ class ProjectEnvironment(Environment):
         # for t in range(T):
         # current_df = df.where(df["Time"] == t).dropna()
         g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
-        g = g.map(sns.lineplot, "Price", "Demand")
+        g = g.map(sns.lineplot, "Price", "Demand").add_legend()
         # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
         # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.show()
@@ -233,7 +233,7 @@ class ProjectEnvironment(Environment):
 
         # for t in range(T):
         # current_df = df.where(df["Time"] == t).dropna()
-        g = sns.FacetGrid(df, size=10, col="Time", legend_out=True)
+        g = sns.FacetGrid(df, size=10, row="Season", col="Time", legend_out=True)
         g = g.map(sns.countplot, "Class")
         # for t in t_vals:
             # current_df = df.where(df["Time"] == t).dropna()

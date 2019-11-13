@@ -95,22 +95,22 @@ context_matrix_parameters = [
     ],
     [
         [
-            [0.01, 200, [], functools.partial(gauss, 1,1)],
-            [0.02, 120, [20, 40, 60, 80, 100], functools.partial(gauss, 1,1)],
-            [0.02, 100, [20, 40, 60, 80, 100], functools.partial(gauss, 1,1)],
-            [0.01, 80, [20, 40, 60, 80, 100], functools.partial(gauss, 75, 8)]
+            [0.01, 600, [], functools.partial(gauss, 1,1)],
+            [0.01, 400, [], functools.partial(gauss, 1,1)],
+            [0.02, 300, [], functools.partial(gauss, 1,1)],
+            [0.02, 200, [], functools.partial(gauss, 1,1)],
         ],
         [
-            [0.03, 300, [], functools.partial(gauss, 1,1)],
-            [0.02, 120, [20, 40, 60, 80, 100], functools.partial(gauss, 1,1)],
-            [0.02, 100, [20, 40, 60, 80, 100], functools.partial(gauss, 1,1)],
-            [0.01, 80, [20, 40, 60, 80, 100], functools.partial(gauss, 75, 8)]
+            [0.02, 800, [], functools.partial(gauss, 1,1)],
+            [0.03, 600, [], functools.partial(gauss, 1,1)],
+            [0.04, 300, [], functools.partial(gauss, 1,1)],
+            [0.02, 600, [], functools.partial(gauss, 1,1)],
         ],
 [
-            [0.03, 200, [], functools.partial(gauss, 1,1)],
-            [0.02, 120, [20, 40, 60, 80, 100], functools.partial(gauss, 1,1)],
-            [0.02, 100, [20, 40, 60, 80, 100], functools.partial(gauss, 1,1)],
-            [0.01, 80, [20, 40, 60, 80, 100], functools.partial(gauss, 75, 8)]
+            [0.02, 600, [], functools.partial(gauss, 1,1)],
+            [0.03, 400, [], functools.partial(gauss, 1,1)],
+            [0.04, 300, [], functools.partial(gauss, 1,1)],
+            [0.02, 200, [], functools.partial(gauss, 1,1)]
         ]
     ]
 ]
@@ -139,9 +139,9 @@ plot_env = False
 plot_context = True
 
 def num_users(idx, t):
-    t_in_season = t % season_length + 1
-    q = (1+idx) * 360
-    coeffs = [1, 2, 3]
+    t_in_season = (t % season_length) + 1
+    q = (1+idx) * 1000
+    coeffs = [0.5, 10, 12]
     m = (1+idx) * coeffs[idx] * (-1)
     return q + m * t_in_season
 
