@@ -30,7 +30,6 @@ class UCB_Learner(Learner):
     Updates Learner observation + average rewards and delta 
     '''
     def update(self, pulled_arm, reward, demand, user):
-        self.t += 1
         self.update_observations(pulled_arm, reward, demand, user)
 
         tot_n = len(self.rewards_per_arm[pulled_arm])

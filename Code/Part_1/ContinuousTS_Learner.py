@@ -25,7 +25,6 @@ class TS_Learner(Learner):
     Updates Learner observations + own rewards mean and std
     '''
     def update(self, pulled_arm, reward, demand, user):
-        self.t += 1
         self.update_observations(pulled_arm, reward, demand, user)
         tot_n = len(self.rewards_per_arm[pulled_arm])
         if self.window is None or self.window > tot_n:

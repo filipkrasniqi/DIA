@@ -9,6 +9,11 @@ class ContextLearner:
         self.learners = [learner_constructor(arms, idx_c, idx_s, sigma, window_length) for idx_s, s in enumerate(subcontexts)]
         self.idx_c = idx_c
     """
+    Returns number of learners, i.e., number of subcontexts
+    """
+    def getNumberLearners(self):
+        return len(self.learners)
+    """
     Returns learner given idx
     """
     def get_learner(self, idx_learner):
@@ -26,3 +31,11 @@ class ContextLearner:
             idx_arm = self.learners[idx_learner].pull_arm(rewards_per_arm, demands_per_arm, user, t)
             idx_arms.append(idx_arm)
         return idx_arms
+    """
+    Plots learners of the ContextLearner (one for each subcontext)
+    """
+    def plot(self, env):
+        learners_plots = []
+        for learner in self.learners:
+            learners_plots.append(learner.plot(env))
+        return learners_plots

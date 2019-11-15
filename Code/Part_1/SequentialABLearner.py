@@ -27,7 +27,6 @@ class SequentialABLearner(Learner):
     Update values of Learner (update observations) and average + variance
     '''
     def update(self, pulled_arm, reward, demand, user):
-        self.t += 1
         self.update_observations(pulled_arm, reward, demand, user)
         n = len(self.rewards_per_arm[pulled_arm])
         self.average_rewards[pulled_arm] = np.sum(self.rewards_per_arm[pulled_arm]) / n

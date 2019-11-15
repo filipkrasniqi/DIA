@@ -7,9 +7,9 @@ import pathlib
 
 import seaborn as sns
 
-curr_dir = os.getcwd()
-outputs_dir = curr_dir+"/outputs/"
-env_dir = outputs_dir+"v01/"
+from Code.Part_1.ProjectEnvironment import ProjectEnvironment
+
+env_dir = ProjectEnvironment.get_env_dir()
 
 class Learner:
 
@@ -45,18 +45,15 @@ class Learner:
     def num_samples(self, arm):
         return len(self.rewards_per_arm[arm])
 
-    def avg_bounds(self, users, alpha):
-        N = np.sum([self.user_samples[user] for user in users])  # / tot_num_samples
-        rewards_user = [r for u, r in zip(self.drawn_user, self.collected_rewards) if u in users]
-        mu, std = np.mean(rewards_user), np.std(rewards_user)
-        t_dist = np.random.standard_t(N - 1)
-        quantile = np.quantile(t_dist, 1 - alpha)
-        delta = quantile * std / np.power(N, 0.5)
-        return mu - delta, mu + delta
-
     def avg_bounds_fixed(self, alpha):
-        N = np.sum(self.user_samples)
-        rewards_user = [r for u, r in zip(self.drawn_user, self.collected_rewards)]
+        tot_N = np.sum(self.user_samples)
+        if self.window is None or self.window > tot_N:
+            N = tot_N
+        else:
+            N = self.window
+        idxs = list(range(tot_N - N, N))
+        drawn_user, collected_rewards = self.drawn_user[idxs], self.collected_rewards[idxs]
+        rewards_user = [r for u, r in zip(drawn_user, collected_rewards)]
         mu, std = np.mean(rewards_user), np.std(rewards_user)
         delta = self.bounds(std, N, alpha)
         return mu - delta, mu + delta
@@ -68,7 +65,14 @@ class Learner:
     # Computed with approach explained here: http://math.mit.edu/~goemans/18310S15/chernoff-notes.pdf
     # i.e., Chernoff bound for bernoulli distribution
     def prob_lower_bound(self, users, alpha):
-        tot_num_samples = np.sum(self.user_samples)
+        tot_N = np.sum([self.user_samples[user] for user in users])  # / tot_num_samples
+        if self.window is None or self.window > tot_N:
+            N = tot_N
+        else:
+            N = self.window
+        idxs = list(range(tot_N - N, N))
+        user_samples = self.user_samples[idxs]
+        tot_num_samples = np.sum(user_samples)
         num_user = np.sum([self.user_samples[user] for user in users])  # / tot_num_samples
         delta = np.power(np.log10(1 / alpha) * 2 / num_user, 0.5)
         return ((1 - delta) * num_user) / tot_num_samples
@@ -79,9 +83,41 @@ class Learner:
         return (1 - delta) * num_user
 
     def pull_arm(self, rewards_per_arm, demands_per_arm, user, t, idx_arm):
+        self.t = t
         reward, demand = rewards_per_arm[idx_arm], demands_per_arm[idx_arm]
         self.update(idx_arm, reward, demand, user)
         return idx_arm
+
+    @staticmethod
+    def plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, name_learner, sigma, curr_dir_env = None, also_cumulative = False):
+        all_y_vals = real_rewards + regret_history
+        if also_cumulative:
+            all_y_vals += cumulative_regret_history
+        ax = sns.lineplot(x=x, y=real_rewards, markers=True, label='Reward')
+        ax = sns.lineplot(x=x, y=regret_history, markers=True, label='Regret')
+        if also_cumulative:
+            ax = sns.lineplot(x=x, y=cumulative_regret_history, markers=True, label='C. Regret')
+        ax.legend()
+        ax.set_title(
+            "{} - sigma {}: evolution of reward, regret and cumulative regret".format(name_learner, sigma))
+        ax.set_xlabel("Time [day]")
+        ax.set_ylabel("Value [$]")
+        plt.xlim((0, np.max(x) + 1))
+        max_val = np.max(all_y_vals)
+        delta = max_val / 10
+        plt.ylim(0, max_val + delta)
+        plt.show()
+        postfix = ""
+        if also_cumulative:
+            postfix = "_cumulative"
+        # plt.savefig("{}regret_reward{}.png".format(curr_dir_env, postfix))
+
+        fig = ax.get_figure()
+        if curr_dir_env is None:
+            name = "temp.png"
+        else:
+            name = "{}regret_reward{}.png".format(curr_dir_env, postfix)
+        fig.savefig(name)
 
     def plot(self, env):
         curr_dir_env = "{}/{}/learner_{}/{}_{}/".format(env_dir, self.sigma, self.name_learner, self.idx_c, self.idx_s)
@@ -96,36 +132,25 @@ class Learner:
             cumulative_regret_history.append(cum_regret)
         # plot real reward(t)
         real_rewards = env.real_rewards
-        print(len(regret_history), len(cumulative_regret_history), len(real_rewards))
+        # print(len(regret_history), len(cumulative_regret_history), len(real_rewards))
         x = list(range(len(real_rewards)))
 
-        ax = sns.lineplot(x=x, y=real_rewards, markers=True, label='Reward')
-        ax.legend()
-        ax = sns.lineplot(x=x, y=regret_history, markers=True, label='Regret')
-        ax.legend()
-        ax.set_title("{}: evolution of reward and regret".format(self.name_learner))
-        ax.set_xlabel("Time")
-        ax.set_ylabel("Value in $")
-
-        plt.plot(x, cumulative_regret_history)
-        plt.title("{} - sigma {}: Cumulative regret over time".format(self.name_learner, self.sigma))
-        plt.xlabel("t")
-        plt.xlim((0, np.max(x)))
-        plt.ylim(0, np.max(cumulative_regret_history))
-        plt.ylabel("Cumulative regret")
-        plt.show()
-        plt.savefig("{}cumulative_regret.png".format(curr_dir_env))
+        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env)
+        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env, also_cumulative = True)
 
         # print functions
-        demand_mapping = {}
+        demand_mapping = []
         for user, (x, y) in enumerate(self.samples_user):
-            demand_mapping[user] = {}
+            demand_mapping.append({})
             for (x_val, y_val) in zip(x, y):
                 if x_val not in demand_mapping[user].keys():
                     demand_mapping[user][x_val] = []
                 demand_mapping[user][x_val].append(y_val)
 
-        for user in demand_mapping.keys():
+        # TODO plot è sbagliata. Devo stamparne solo una facendo la media considerando gli utenti associati al subxont4ext corrente,
+        # TODO poichè alcuni non hanno valori. Poichè è inutile e serviva solo per debug, commentata
+        """
+        for user in range(len(demand_mapping)):
             lower_bounds, avg_demand, upper_bounds = [], [], []
             for idx_arm, arm in enumerate(self.arms):
                 y = demand_mapping[user][idx_arm]
@@ -149,7 +174,7 @@ class Learner:
             plt.show()
 
             plt.savefig("{}demand_{}.png".format(curr_dir_env, user))
-
+        """
         return x, real_rewards, regret_history, cumulative_regret_history, (self.idx_c, self.idx_s, demand_mapping)
 
     @abstractmethod

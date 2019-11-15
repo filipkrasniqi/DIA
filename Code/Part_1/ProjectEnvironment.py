@@ -4,7 +4,12 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import seaborn as sns
 sns.set(rc={'figure.figsize':(15,9)})
-sns.set(font_scale=2)  # crazy big
+sns.set(font_scale=2.5)
+import os
+
+curr_dir = os.getcwd()
+outputs_dir = curr_dir+"/outputs/"
+env_dir = outputs_dir+"v05_with_context/"
 
 import pandas as pd
 
@@ -55,6 +60,10 @@ class ProjectEnvironment(Environment):
         self.selected_context = 0
         self.contexts_alternatives = context_alternatives
         self.all_rewards = []  # list of arrays. Each array contains <#arms> values
+
+    @staticmethod
+    def get_env_dir():
+        return env_dir
 
     """
     Returns the number of users for each of them depending on current probability function
@@ -275,7 +284,6 @@ class User():
         demand_val = np.exp(price * (-1) * self.phase_function[season][0]) * self.phase_function[season][1]
         for mu in self.phase_function[season][2]:
             demand_val += self.phase_function[season][3](t, mu, price)
-        # self.phase_function[season][2](t)
         return demand_val
 
     def optimum(self, t, season=None):
