@@ -7,6 +7,9 @@ import pathlib
 
 import seaborn as sns
 
+sns.set(font_scale=2.5)
+sns.set(rc={'figure.figsize':(15,9), 'axes.formatter.limits': (-5, 5), 'axes.titlesize': 'medium', 'xtick.labelsize': 'x-large', 'ytick.labelsize': 'x-large'})
+
 from Code.Part_1.ProjectEnvironment import ProjectEnvironment
 
 env_dir = ProjectEnvironment.get_env_dir()
@@ -52,7 +55,7 @@ class Learner:
             N = tot_N
         else:
             N = self.window
-        idxs = list(range(tot_N - N, N))
+        idxs = list(range(tot_N - N, tot_N))
         drawn_user, collected_rewards = self.drawn_user[idxs], self.collected_rewards[idxs]
         rewards_user = [r for u, r in zip(drawn_user, collected_rewards)]
         mu, std = np.mean(rewards_user), np.std(rewards_user)
@@ -101,7 +104,7 @@ class Learner:
             ax = sns.lineplot(x=x, y=cumulative_regret_history, markers=True, label='C. Regret')
         ax.legend()
         ax.set_title(
-            "{} - sigma {}: evolution of reward, regret and cumulative regret".format(name_learner, sigma))
+            "{} - sigma {}: reward, regret, cumulative regret".format(name_learner, sigma))
         ax.set_xlabel("Time [day]")
         ax.set_ylabel("Value [$]")
         plt.xlim((0, np.max(x) + 1))
@@ -137,11 +140,16 @@ class Learner:
         # print(len(regret_history), len(cumulative_regret_history), len(real_rewards))
         x = list(range(len(real_rewards)))
 
+<<<<<<< HEAD:Code/learners/Learner.py
         Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner,
                                    self.sigma, curr_dir_env)
         Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner,
                                    self.sigma, curr_dir_env, also_cumulative=True)
 
+=======
+        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env)
+        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env, also_cumulative = True)
+>>>>>>> dev:Code/Part_1/Learner.py
         # print functions
         demand_mapping = []
         for user, (x, y) in enumerate(self.samples_user):

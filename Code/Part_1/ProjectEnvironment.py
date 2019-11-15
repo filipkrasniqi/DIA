@@ -9,7 +9,7 @@ import os
 
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
-env_dir = outputs_dir+"v05_with_context/"
+env_dir = outputs_dir+"v01_with_context/"
 
 import pandas as pd
 
@@ -125,11 +125,11 @@ class ProjectEnvironment(Environment):
             users = self.contexts[self.selected_context]
             subcontexts = self.contexts_alternatives[self.selected_context]
             subcontext = self.get_subcontext_from_user(subcontexts, user)
-            pulled_arm = self.arms[idx_arm]
+            price = self.arms[idx_arm]
             idx_reward = self.batch_size - idx
             reward = self.all_rewards[idx_reward]
-            real_sample = users[subcontext].demand(pulled_arm, t)
-            real_reward = real_sample * pulled_arm
+            real_sample = users[subcontext].demand(price, t)
+            real_reward = real_sample * price
             contexts_optimals = []
             for idx_c, context in enumerate(self.contexts):
                 context_optimal = 0
@@ -144,6 +144,21 @@ class ProjectEnvironment(Environment):
         self.regret.append(regret_t)
         self.real_rewards.append(real_reward_t)
         return reward, user
+    """
+    Return, given T, best rewards for each t
+    """
+    def best_rewards_t(self, T):
+        best_rewards = []
+        for t in range(1, T+1):
+            for idx_c, context in enumerate(self.contexts):
+                context_optimal = 0
+                contexts_optimals = []
+                for user, p in zip(context, self.probabilities_context(idx_c, t)):
+                    optimum, optimum_arm = user.optimum(t)
+                    context_optimal += p * optimum
+                contexts_optimals.append(context_optimal)
+            best_rewards.append(np.max(contexts_optimals))
+        return best_rewards
     """
     Samples given a context ID
     """
