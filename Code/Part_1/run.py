@@ -15,7 +15,7 @@ import pickle
 env_dir = ProjectEnvironment.get_env_dir()
 
 n_users = 3
-sigma_env_n = [1, 8, 16]# [1, 8, 16, 32, 64]
+sigma_env_n = [1, 2, 4]
 
 season_length = 91
 number_of_seasons = 4
@@ -118,9 +118,9 @@ test_T = int(portion_samples_ab_testing * T)
 
 norm_dist = stats.norm(0, 1)
 z_a, z_b = norm_dist.pdf(1 - alpha), norm_dist.pdf(beta)
-do_sequential_AB = True
-do_UCB = True
-do_TS = True
+do_sequential_AB = False
+do_UCB = False
+do_TS = False
 
 coeff_window_length = 3
 window_length = int(3 * math.pow(T, 0.5))
