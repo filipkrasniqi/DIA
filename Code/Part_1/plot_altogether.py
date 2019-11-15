@@ -1,6 +1,6 @@
 import os, pickle
 
-from Code.Part_1.Learner import Learner
+from Code.learners.Learner import Learner
 
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"

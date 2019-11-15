@@ -6,9 +6,9 @@ import functools
 
 from Code.Part_1.ContextLearner import ContextLearner
 from Code.Part_1.ProjectEnvironment import ProjectEnvironment
-from Code.Part_1.SequentialABLearner import SequentialABLearner
-from Code.Part_1.ContinuousTS_Learner import TS_Learner
-from Code.Part_1.UCB_Learner import UCB_Learner
+from Code.learners.SequentialABLearner import SequentialABLearner
+from Code.learners.ContinuousTS_Learner import TS_Learner
+from Code.learners.UCB_Learner import UCB_Learner
 
 import pickle
 

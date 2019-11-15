@@ -22,11 +22,11 @@ for e in range(0,n_experiments):
     swts_learner = SWTS_Learner(n_arms = n_arms,window_size = window_size)
 
     for t in range(0,T):
-        pulled_arm = ts_learner.pull_arm()
+        pulled_arm = ts_learner.pull_arms()
         reward = ts_env.execute_round(pulled_arm)
         ts_learner.update(pulled_arm,reward)
 
-        pulled_arm = swts_learner.pull_arm()
+        pulled_arm = swts_learner.pull_arms()
         reward = swts_env.execute_round(pulled_arm)
         swts_learner.update(pulled_arm, reward)
 

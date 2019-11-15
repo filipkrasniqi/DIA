@@ -28,7 +28,7 @@ class ContextLearner:
         idx_arms = []
         for reward, user in zip(rewards_per_arm, user):
             idx_learner = [i for i, s in enumerate(self.subcontexts) if user in s][0]
-            idx_arm = self.learners[idx_learner].pull_arm(rewards_per_arm, demands_per_arm, user, t)
+            idx_arm = self.learners[idx_learner].pull_arms(rewards_per_arm, demands_per_arm, user, t)
             idx_arms.append(idx_arm)
         return idx_arms
     """
