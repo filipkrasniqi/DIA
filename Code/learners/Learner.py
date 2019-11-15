@@ -11,9 +11,10 @@ from Code.Part_1.ProjectEnvironment import ProjectEnvironment
 
 env_dir = ProjectEnvironment.get_env_dir()
 
+
 class Learner:
 
-    def __init__(self, arms, n_users=3, window=None, idx_c = -1, idx_s = -1, name_learner = None, sigma = None):
+    def __init__(self, arms, n_users=3, window=None, idx_c=-1, idx_s=-1, name_learner=None, sigma=None):
         if name_learner is None:
             raise ValueError("Pls name me")
         self.sigma = sigma
@@ -28,7 +29,7 @@ class Learner:
         self.user_samples = [0 for _ in range(n_users)]  # number of samples drawn for each user
         self.idx_c = idx_c
         self.idx_s = idx_s
-        self.samples_user = [([],[]) for _ in range(n_users)]   # values of the samples drawn for each user
+        self.samples_user = [([], []) for _ in range(n_users)]  # values of the samples drawn for each user
 
     def update_observations(self, pulled_arm, reward, demand, user):
         self.rewards_per_arm[pulled_arm].append(reward)
@@ -60,7 +61,7 @@ class Learner:
 
     @staticmethod
     def bounds(std, N, alpha):
-        return np.quantile(np.random.standard_t(N - 1), 1 - alpha/2) * std / np.power(N, 0.5)
+        return np.quantile(np.random.standard_t(N - 1), 1 - alpha / 2) * std / np.power(N, 0.5)
 
     # Computed with approach explained here: http://math.mit.edu/~goemans/18310S15/chernoff-notes.pdf
     # i.e., Chernoff bound for bernoulli distribution
@@ -89,7 +90,8 @@ class Learner:
         return idx_arm
 
     @staticmethod
-    def plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, name_learner, sigma, curr_dir_env = None, also_cumulative = False):
+    def plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, name_learner, sigma,
+                           curr_dir_env=None, also_cumulative=False):
         all_y_vals = real_rewards + regret_history
         if also_cumulative:
             all_y_vals += cumulative_regret_history
@@ -135,8 +137,10 @@ class Learner:
         # print(len(regret_history), len(cumulative_regret_history), len(real_rewards))
         x = list(range(len(real_rewards)))
 
-        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env)
-        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env, also_cumulative = True)
+        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner,
+                                   self.sigma, curr_dir_env)
+        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner,
+                                   self.sigma, curr_dir_env, also_cumulative=True)
 
         # print functions
         demand_mapping = []

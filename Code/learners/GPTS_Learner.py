@@ -1,30 +1,25 @@
-from Code.Part_1.Learner import Learner
 import numpy as np
+import scipy.stats as stats
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
-import scipy.stats as stats
 
 
-class GPTS_Learner(Learner):
-    def __init__(self, n_arms, arms, sigma_gp,initial_sigmas):
-        super().__init__(n_arms)
+class GPTSLearner:
+    def __init__(self, arms, sigma):
+        self.name_learner = "GPTS learner"
         self.arms = arms
-        self.means = np.ones(n_arms)
-        self.sigmas = np.ones(n_arms) * initial_sigmas
-        self.pulled_arms = []
-        alpha = sigma_gp
+        self.means = np.ones(len(arms))
+        self.sigmas = np.ones(len(arms)) * sigma
+        self.pulled_arms = list()
+        self.collected_rewards = list()
 
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
-        self.gp = GaussianProcessRegressor(kernel=kernel, alpha=alpha ** 2, normalize_y=True, n_restarts_optimizer=10)
+        self.gp = GaussianProcessRegressor(kernel=kernel, alpha=sigma ** 2, normalize_y=True, n_restarts_optimizer=10)
 
-    def update_observations(self, arm_idx, reward):
-        super().update_observations(arm_idx, reward)
-        self.pulled_arms.append(self.arms[arm_idx])
-
-    def update_model(self):
+    def update(self, idx_pulled_arm, reward):
+        self.pulled_arms.append(self.arms[idx_pulled_arm])
+        self.collected_rewards.append(reward)
         # Split pulled_arms in elements with at least 2 arrays each one.
-        # np.atleast_3d(3.0) --> array([[[ 3.]]])
-
         x = np.atleast_2d(self.pulled_arms).T
         y = self.collected_rewards
         # X: Training Data
@@ -34,21 +29,12 @@ class GPTS_Learner(Learner):
         self.sigmas = np.maximum(self.sigmas, 1e-2)
         self.means = np.maximum(self.means, 0)
 
-    def update(self, pulled_arm, reward):
-        self.t += 1
-        self.update_observations(pulled_arm, reward)
-        self.update_model()
-
-    def pull_arm(self):
-
-        # return np.maximum(np.random.normal(self.means, self.sigmas), 0)
-
-        sampled_values = []
-        for mu, sigma in zip(self.means, self.sigmas):
-            lower, upper = 0, mu + 2 * sigma
-            mu, sigma = mu, sigma
-            X = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
-            sampled_values.append(X.rvs(1))
-        return sampled_values
-
-
+    def pull_arms(self):
+        """sampled_values = []
+                for mu, sigma in zip(self.means, self.sigmas):
+                    lower, upper = 0, mu + 2 * sigma
+                    mu, sigma = mu, sigma
+                    X = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+                    sampled_values.append(X.rvs(1))
+                return sampled_values"""
+        return self.gp.sample_y(np.atleast_2d(self.arms).T)

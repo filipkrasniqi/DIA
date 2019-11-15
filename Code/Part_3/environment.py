@@ -162,9 +162,9 @@ class Environment:
     def get_clicks_noise(self, budgets):
         clicks = []
         for budget, idx_subcampaign in itertools.product(budgets, list(range(self.n_subcampaigns))):
-            clicks.append(self.get_click_noise(budget, idx_subcampaign))
+            clicks.append(self.subcampaigns[idx_subcampaign].get_clicks_noise(budget))
         return clicks
 
     def plot(self):
-        for s in range(0, self.n_subcampaigns):
-            self.subcampaigns[s].plot()
+        for idx_subcampaign in range(0, self.n_subcampaigns):
+            self.subcampaigns[idx_subcampaign].plot()
