@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.stats as stats
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 
@@ -14,7 +13,7 @@ class GPTSLearner:
         self.collected_rewards = list()
 
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
-        self.gp = GaussianProcessRegressor(kernel=kernel, alpha=sigma ** 2, normalize_y=True, n_restarts_optimizer=10)
+        self.gp = GaussianProcessRegressor(kernel=kernel, alpha=1e-7, normalize_y=True, n_restarts_optimizer=10)
 
     def update(self, idx_pulled_arm, reward):
         self.pulled_arms.append(self.arms[idx_pulled_arm])
@@ -30,11 +29,5 @@ class GPTSLearner:
         self.means = np.maximum(self.means, 0)
 
     def pull_arms(self):
-        """sampled_values = []
-                for mu, sigma in zip(self.means, self.sigmas):
-                    lower, upper = 0, mu + 2 * sigma
-                    mu, sigma = mu, sigma
-                    X = stats.truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
-                    sampled_values.append(X.rvs(1))
-                return sampled_values"""
-        return self.gp.sample_y(np.atleast_2d(self.arms).T)
+        values = self.gp.sample_y(np.atleast_2d(self.arms).T)
+        return np.where(values > 0, values, 0)

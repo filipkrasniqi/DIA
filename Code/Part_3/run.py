@@ -47,13 +47,7 @@ def plot_regression(current_folder, arms, environment, idx_subcampaign, save_fig
     for arm in arms:
         # For each arm (budget) of a subcampaign, get real number of clicks obtained.
         real_function_y.append(environment.get_clicks_real(arm, idx_subcampaign))
-    '''
-    budget = gpts_learners[idx_subcampaign].arms[pulled_arm]
-    # Get reward (number of clicks with noise) from environment.
-    reward = environment.get_click_noise(budget, idx_subcampaign)
-    # Update
-    gpts_learners[idx_subcampaign].update(pulled_arm, reward)
-    '''
+
     x_pred = np.atleast_2d(arms).T
 
     y = np.array(gpts_learners[idx_subcampaign].means)
@@ -144,7 +138,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         slopes=slopes,
         max_clicks=max_clicks)
     arms = env.get_arms()
-    env.plot()
+    # env.plot()
 
     # CLAIRVOYANT ALGORITHM.
 
@@ -169,9 +163,9 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
     start_time = time.time()
     # Every round, pull arms and update rewards.
     for t in range(1, T + 1):
-        # Run the DP algorithm in order to get optimal distribution of budgets between subcampaigns.
-        # todo campiona
+        # Sample all the learners.
         samples = noisy_sampling(n_subcampaigns, gpts_learners)
+        # Run the DP algorithm in order to get optimal distribution of budgets between subcampaigns.
         combinatorial_alg = DPAlgorithm(arms, n_subcampaigns, samples, min_daily_budget, total_budget)
         combinatorial = combinatorial_alg.get_budgets()
         # Array containing optimal allocation of budgets.
@@ -180,7 +174,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         instantiated_budget = np.sum(arms_to_pull)
 
         # Pull arms and get the rewards (number of clicks with noise).
-        noisy_rewards = env.get_clicks_noise(arms_to_pull)
+        noisy_rewards = [env.get_clicks_noise(arm, idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
         # Get real number of clicks from a subcampaign for a certain budget.
         real_rewards = [env.get_clicks_real(arm, idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
 
@@ -194,7 +188,6 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         for idx_subcampaign in range(0, n_subcampaigns):
             # Get index of pulled arm.
             idx_pulled_arm = gpts_learners[idx_subcampaign].arms.tolist().index(arms_to_pull[idx_subcampaign])
-            # TODO Update learner.
             gpts_learners[idx_subcampaign].update(idx_pulled_arm, noisy_rewards[idx_subcampaign])
 
             if t % 50 == 0:

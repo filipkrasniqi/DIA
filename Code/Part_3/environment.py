@@ -1,10 +1,7 @@
-import matplotlib.pyplot as plt
-import scipy.stats as stats
-import numpy as np
-import itertools
 from random import random
 
-# Punto 2
+import matplotlib.pyplot as plt
+import numpy as np
 
 RESOLUTION = 20
 
@@ -156,14 +153,8 @@ class Environment:
     def get_clicks_real(self, budget, idx_subcampaign):
         return self.subcampaigns[idx_subcampaign].get_clicks_real(budget)
 
-    def get_click_noise(self, budget, idx_subcampaign):
+    def get_clicks_noise(self, budget, idx_subcampaign):
         return self.subcampaigns[idx_subcampaign].get_clicks_noise(budget)
-
-    def get_clicks_noise(self, budgets):
-        clicks = []
-        for budget, idx_subcampaign in itertools.product(budgets, list(range(self.n_subcampaigns))):
-            clicks.append(self.subcampaigns[idx_subcampaign].get_clicks_noise(budget))
-        return clicks
 
     def plot(self):
         for idx_subcampaign in range(0, self.n_subcampaigns):
