@@ -72,11 +72,11 @@ def plot_regression(current_folder, arms, environment, idx_subcampaign, save_fig
 
 # Functions characteristics.
 bids = np.array([
-    [5, 2, 1],
-    [2, 1, 4],
-    [3, 4, 1],
-    [3, 5, 1],
-    [3, 4, 1]])
+    [5, 5, 5],
+    [1, 1, 1],
+    [3, 3, 3],
+    [1, 1, 1],
+    [2, 2, 2]])
 slopes = -1 * np.array([
     [0.5, 0.3, 0.1],
     [0.3, 0.1, 0.4],
@@ -97,14 +97,14 @@ user_probabilities = [[
     [0.30, 0.65, 0.05]]]
 
 # Prepare environment.
-sigma_env_n = [0.01, 1, 2]
+sigma_env_n = [0.1, 1, 5]
 n_subcampaigns = 5
 n_users_x_subcampaign = 3
 n_arms_sub = 21
 total_budget = 200
 min_daily_budget = 0.0
 max_daily_budget = total_budget
-T = 200
+T = 10
 
 # Folders to save images.
 curr_dir = os.getcwd()
@@ -138,7 +138,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         slopes=slopes,
         max_clicks=max_clicks)
     arms = env.get_arms()
-    # env.plot()
+    env.plot()
 
     # CLAIRVOYANT ALGORITHM.
 
@@ -190,9 +190,10 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
             idx_pulled_arm = gpts_learners[idx_subcampaign].arms.tolist().index(arms_to_pull[idx_subcampaign])
             gpts_learners[idx_subcampaign].update(idx_pulled_arm, noisy_rewards[idx_subcampaign])
 
-            if t % 50 == 0:
+            if t % (T / 2) == 0:
                 # Plot every subcampaign every 50 rounds.
-                plot_regression(cur_fold, arms, env, idx_subcampaign)
+                # plot_regression(cur_fold, arms, env, idx_subcampaign)
+                pass
 
         rewards_per_round.append(np.sum(real_rewards))
 
@@ -200,7 +201,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         if t % 10 == 0:
             end_time = time.time()
             t_time = end_time - start_time
-            print(str(t) + ' - time: ' + str(round(t_time, 2)) + ' sec')
+            print("%d - time: %d min %d sec" % (t, int(t_time / 60), int(t_time % 60)))
             start_time = time.time()
 
     # PLOT CUMULATIVE REGRET.

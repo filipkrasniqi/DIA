@@ -7,7 +7,7 @@ RESOLUTION = 20
 
 
 class User:
-    def __init__(self, max_budget, bid, slope, max_clicks, idx):
+    def __init__(self, max_budget, bid, slope, max_clicks, idx, max_value_subcampaign):
         self.max_budget = max_budget
         self.bid = bid
         self.slope = slope
@@ -15,6 +15,7 @@ class User:
         self.x = list()
         self.y = list()
         self.idx = idx
+        self.max_clicks_subcampaign = max_value_subcampaign
         self.generate_values()
 
     def generate_values(self):
@@ -33,9 +34,15 @@ class User:
     def plot(self, idx_subcampaign):
         plt.plot(self.x, self.y)
         plt.title("Subcampaign {}, User {}".format(idx_subcampaign, self.idx))
-        plt.xlabel("Daily budget")
+        plt.xlabel("Daily budget [€]")
         plt.xlim((0, self.max_budget))
-        plt.ylabel("Clicks")
+        plt.xticks(np.arange(0, self.max_budget+1, 20))
+        plt.ylabel("Number of clicks")
+        plt.ylim((0, self.max_clicks_subcampaign + self.max_clicks_subcampaign / 10))
+        plt.yticks(np.arange(
+            0,
+            self.max_clicks_subcampaign + self.max_clicks_subcampaign / 10,
+            self.max_clicks_subcampaign / 10))
         plt.show()
 
 
@@ -63,7 +70,8 @@ class Subcampaign:
                             self.bids[idx_user],
                             self.slopes[idx_user],
                             self.max_clicks[idx_user],
-                            idx_user)
+                            idx_user,
+                            max(self.max_clicks))
             self.users.append(new_user)
         # Create subcampaign curve.
         self.x = self.users[0].x
@@ -114,10 +122,16 @@ class Subcampaign:
         for u in range(0, self.n_users):
             self.users[u].plot(self.idx)
         plt.plot(self.x, self.y)
-        plt.title("Subcampaign {}".format(self.idx))
-        plt.xlabel("Daily budget")
+        plt.title("Subcampaign {}, aggregated curve".format(self.idx))
+        plt.xlabel("Daily budget [€]")
         plt.xlim((0, self.max_budget))
-        plt.ylabel("Clicks")
+        plt.xticks(np.arange(0, self.max_budget+1, 20))
+        plt.ylabel("Number of clicks")
+        plt.ylim((0, max(self.max_clicks) + max(self.max_clicks) / 10))
+        plt.yticks(np.arange(
+            0,
+            max(self.max_clicks) + max(self.max_clicks) / 10,
+            max(self.max_clicks) / 10))
         plt.show()
 
 

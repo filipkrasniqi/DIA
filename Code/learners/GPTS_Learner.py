@@ -13,7 +13,7 @@ class GPTSLearner:
         self.collected_rewards = list()
 
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
-        self.gp = GaussianProcessRegressor(kernel=kernel, alpha=1e-7, normalize_y=True, n_restarts_optimizer=10)
+        self.gp = GaussianProcessRegressor(kernel=kernel, alpha=1e-10, normalize_y=True, n_restarts_optimizer=10)
 
     def update(self, idx_pulled_arm, reward):
         self.pulled_arms.append(self.arms[idx_pulled_arm])
