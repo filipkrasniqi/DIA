@@ -13,7 +13,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def plot_regression(current_folder, arms, environment, idx_subcampaign, save_figure=False):
+def plot_regression(current_folder, arms, environment, idx_subcampaign, t, save_figure=False):
     """
     Plots the regression graph.
     :param current_folder: folder to put the plots in.
@@ -41,10 +41,11 @@ def plot_regression(current_folder, arms, environment, idx_subcampaign, save_fig
              np.concatenate([y - 1.96 * sigma_gp, (y + 1.96 * sigma_gp)[::-1]]),
              alpha=0.5, fc='b', ec='None', label='95% conf interval')
 
-    plt.xlabel('$x$')
-    plt.ylabel('$Real Function$')
+    plt.xlabel("Budget [€]")
+    plt.ylabel("Number of clicks")
+    plt.ylim((0, 30))
     plt.legend(loc='lower right')
-    plt.title("Subcampaign {}".format(idx_subcampaign))
+    plt.title("Subcampaign {}, t = {}".format(idx_subcampaign, t))
     if save_figure:
         plt.savefig('{}/prediction_subcampaign_{}.png'.format(current_folder, idx_subcampaign))
 
@@ -85,7 +86,7 @@ n_arms_sub = 21
 total_budget = 200
 min_daily_budget = 0.0
 max_daily_budget = total_budget
-T = 10
+T = 100
 
 # Folders to save images.
 curr_dir = os.getcwd()
@@ -176,29 +177,33 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         # Total budget instantiated for the campaign.
         instantiated_budget = np.sum(arms_to_pull)
 
+        rewards = [env.get_rewards(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
         # Get real number of clicks from a subcampaign for a certain budget.
-        real_rewards = [env.get_rewards(arm, idx_subcampaign)[1] for idx_subcampaign, arm in
-                        enumerate(arms_to_pull)]
+        real_rewards = [reward[1] for reward in rewards]
         # Pull arms and get the rewards (number of clicks with noise).
-        noisy_rewards = [env.get_rewards(arm, idx_subcampaign)[2] for idx_subcampaign, arm in
-                         enumerate(arms_to_pull)]
+        noisy_rewards = [reward[2] for reward in rewards]
 
         # Calculate regression error.
         current_regression_error = [abs(reward - real_value_for_arm) for (reward, real_value_for_arm) in
                                     zip(noisy_rewards, real_rewards)]
         # Regression error is avg(pulled_clicks - real_clicks).
-        regression_error.append(np.max(np.array(current_regression_error)))
+        error = np.max(np.array(current_regression_error))
+        regression_error.append(error)
 
         # For each subcampaign, update respective learner.
         for idx_subcampaign in range(0, n_subcampaigns):
             # Get index of pulled arm.
             idx_pulled_arm = gpts_learners[idx_subcampaign].arms.tolist().index(arms_to_pull[idx_subcampaign])
-            gpts_learners[idx_subcampaign].update(idx_pulled_arm, noisy_rewards[idx_subcampaign])
+            gpts_learners[idx_subcampaign].update(
+                idx_pulled_arm=idx_pulled_arm,
+                reward=noisy_rewards[idx_subcampaign],
+                user_sampled=rewards[idx_subcampaign][0])
+
+            plot_regression(cur_fold, arms, env, idx_subcampaign, t)
 
             if t % (T / 2) == 0:
                 # Plot every subcampaign every 50 rounds.
-                # plot_regression(cur_fold, arms, env, idx_subcampaign)
-                pass
+                plot_regression(cur_fold, arms, env, idx_subcampaign, t)
 
         rewards_per_round.append(np.sum(real_rewards))
 

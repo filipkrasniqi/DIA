@@ -1,9 +1,10 @@
-from random import random
+import random
 
 import matplotlib.pyplot as plt
 import numpy as np
 
 RESOLUTION = 20
+random.seed(17)
 
 
 class User:
@@ -103,7 +104,7 @@ class Subcampaign:
         # Select user clicking on ads depending on probabilities.
         user_to_sample = len(self.user_probabilities) - 1
         for i, prob in enumerate(self.user_probabilities):
-            rand = random()
+            rand = random.random()
             if rand <= prob:
                 user_to_sample = i
                 break
@@ -132,11 +133,14 @@ class Subcampaign:
 
         # User curve sampling.
         number_of_clicks = self.users[idx_user].y[index]
-        return number_of_clicks
+        mu, sigma = 0, self.sigma
+        sample = np.random.normal(mu, sigma)
+        return max(0, number_of_clicks + sample)
 
     def plot(self):
         for u in range(0, self.n_users):
-            self.users[u].plot(self.idx)
+            # self.users[u].plot(self.idx)
+            pass
         plt.plot(self.x, self.y)
         plt.title("Subcampaign {}, aggregated curve".format(self.idx))
         plt.xlabel("Daily budget [€]")
