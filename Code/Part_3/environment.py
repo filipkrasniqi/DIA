@@ -36,7 +36,7 @@ class User:
         plt.title("Subcampaign {}, User {}".format(idx_subcampaign, self.idx))
         plt.xlabel("Daily budget [€]")
         plt.xlim((0, self.max_budget))
-        plt.xticks(np.arange(0, self.max_budget+1, 20))
+        plt.xticks(np.arange(0, self.max_budget + 1, 20))
         plt.ylabel("Number of clicks")
         plt.ylim((0, self.max_clicks_subcampaign + self.max_clicks_subcampaign / 10))
         plt.yticks(np.arange(
@@ -99,24 +99,40 @@ class Subcampaign:
         # Return number of clicks.
         return self.y[index]
 
-    def sample(self, budget):
+    def get_rewards(self, budget):
+        # Select user clicking on ads depending on probabilities.
+        user_to_sample = len(self.user_probabilities) - 1
+        for i, prob in enumerate(self.user_probabilities):
+            rand = random()
+            if rand <= prob:
+                user_to_sample = i
+                break
+
+        # Get rewards.
+        real_reward = self.sample_real(budget, user_to_sample)
+        noisy_reward = self.sample_noise(budget, user_to_sample)
+
+        return user_to_sample, real_reward, noisy_reward
+
+    def sample_real(self, budget, idx_user):
         # Search for the index representing the right budget on the x axis.
         index = 0
         while budget > self.x[index]:
             index = index + 1
 
-        # Generate random value in order to select user to sample.
-        user_sampled = len(self.user_probabilities)
-        for i, prob in enumerate(self.user_probabilities):
-            rand = random()
-            if rand <= prob:
-                user_sampled = i
-                break
+        # User curve sampling.
+        number_of_clicks = self.users[idx_user].y[index]
+        return number_of_clicks
+
+    def sample_noise(self, budget, idx_user):
+        # Search for the index representing the right budget on the x axis.
+        index = 0
+        while budget > self.x[index]:
+            index = index + 1
 
         # User curve sampling.
-        y = self.users[user_sampled].y[index]
-
-        return y, user_sampled
+        number_of_clicks = self.users[idx_user].y[index]
+        return number_of_clicks
 
     def plot(self):
         for u in range(0, self.n_users):
@@ -125,7 +141,7 @@ class Subcampaign:
         plt.title("Subcampaign {}, aggregated curve".format(self.idx))
         plt.xlabel("Daily budget [€]")
         plt.xlim((0, self.max_budget))
-        plt.xticks(np.arange(0, self.max_budget+1, 20))
+        plt.xticks(np.arange(0, self.max_budget + 1, 20))
         plt.ylabel("Number of clicks")
         plt.ylim((0, max(self.max_clicks) + max(self.max_clicks) / 10))
         plt.yticks(np.arange(
@@ -137,13 +153,14 @@ class Subcampaign:
 
 class Environment:
 
-    def __init__(self, n_arms, n_users, n_subcampaigns, max_budget, prob_users, sigma, bids, slopes, max_clicks):
+    def __init__(self, n_arms, n_users, n_subcampaigns, max_budget, user_probabilities, sigma, bids, slopes,
+                 max_clicks):
         # Arms.
         self.n_arms = n_arms
         self.n_users = n_users
         self.n_subcampaigns = n_subcampaigns
         self.max_budget = max_budget
-        self.prob_users = prob_users
+        self.user_probabilities = user_probabilities
         self.sigma = sigma
         self.subcampaigns = []
 
@@ -151,7 +168,7 @@ class Environment:
             new_subcampaign = Subcampaign(
                 n_arms=self.n_arms,
                 n_users=self.n_users,
-                user_probabilities=self.prob_users[idx_subcampaign],
+                user_probabilities=self.user_probabilities[idx_subcampaign],
                 max_budget=self.max_budget,
                 bids=bids[idx_subcampaign],
                 slopes=slopes[idx_subcampaign],
@@ -164,11 +181,11 @@ class Environment:
         arms = np.linspace(0, self.max_budget, self.n_arms)
         return arms
 
+    def get_rewards(self, budget, idx_subcampaign):
+        return self.subcampaigns[idx_subcampaign].get_rewards(budget)
+
     def get_clicks_real(self, budget, idx_subcampaign):
         return self.subcampaigns[idx_subcampaign].get_clicks_real(budget)
-
-    def get_clicks_noise(self, budget, idx_subcampaign):
-        return self.subcampaigns[idx_subcampaign].get_clicks_noise(budget)
 
     def plot(self):
         for idx_subcampaign in range(0, self.n_subcampaigns):

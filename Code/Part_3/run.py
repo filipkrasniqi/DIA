@@ -13,25 +13,6 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
-def noisy_sampling(n_subcampaigns, gpts_learners):
-    samples = list()
-    for idx_subcampaign in range(0, n_subcampaigns):
-        clicks = gpts_learners[idx_subcampaign].pull_arms()
-        samples.append(clicks)
-    return samples
-
-
-def real_sampling(arms, n_sub_campaigns, env):
-    samples = list()
-    for idx_subcampaign in range(0, n_sub_campaigns):
-        vet = list()
-        for j in range(0, len(arms)):
-            clicks = env.get_clicks_real(arms[j], idx_subcampaign)
-            vet.append(clicks)
-        samples.append(vet)
-    return samples
-
-
 def plot_regression(current_folder, arms, environment, idx_subcampaign, save_figure=False):
     """
     Plots the regression graph.
@@ -115,6 +96,28 @@ env_dir = outputs_dir + "2vars/"
 if not os.path.exists(env_dir):
     os.mkdir(env_dir)
 
+
+def pull_gpts_arms(learners):
+    # Get one sample from each GPTS learner.
+    samples = list()
+    for idx_subcampaign in range(0, n_subcampaigns):
+        clicks = learners[idx_subcampaign].pull_arms()
+        samples.append(clicks)
+    return samples
+
+
+def real_sampling(arms, env):
+    # Get real values from all arms, from all subcampaigns.
+    samples = list()
+    for idx_subcampaign in range(0, n_subcampaigns):
+        vet = list()
+        for j in range(0, len(arms)):
+            clicks = env.get_clicks_real(arms[j], idx_subcampaign)
+            vet.append(clicks)
+        samples.append(vet)
+    return samples
+
+
 # One iteration for each combination of sigma and user probabilities.
 for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
     sigma_env = s_p[0]
@@ -132,7 +135,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         n_users=n_users_x_subcampaign,
         n_subcampaigns=n_subcampaigns,
         max_budget=total_budget,
-        prob_users=prob_users,
+        user_probabilities=prob_users,
         sigma=sigma_env,
         bids=bids,
         slopes=slopes,
@@ -143,7 +146,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
     # CLAIRVOYANT ALGORITHM.
 
     # Execute combinatorial algorithm to get optimal distribution of budgets to different subcampaigns.
-    samples = real_sampling(arms, n_subcampaigns, env)
+    samples = real_sampling(arms, env)
     combinatorial_alg = DPAlgorithm(arms, n_subcampaigns, samples, min_daily_budget, total_budget)
     combinatorial = combinatorial_alg.get_budgets()
     # Get optimal value of clicks for the campaign (clairvoyant).
@@ -164,7 +167,7 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
     # Every round, pull arms and update rewards.
     for t in range(1, T + 1):
         # Sample all the learners.
-        samples = noisy_sampling(n_subcampaigns, gpts_learners)
+        samples = pull_gpts_arms(gpts_learners)
         # Run the DP algorithm in order to get optimal distribution of budgets between subcampaigns.
         combinatorial_alg = DPAlgorithm(arms, n_subcampaigns, samples, min_daily_budget, total_budget)
         combinatorial = combinatorial_alg.get_budgets()
@@ -173,10 +176,12 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         # Total budget instantiated for the campaign.
         instantiated_budget = np.sum(arms_to_pull)
 
-        # Pull arms and get the rewards (number of clicks with noise).
-        noisy_rewards = [env.get_clicks_noise(arm, idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
         # Get real number of clicks from a subcampaign for a certain budget.
-        real_rewards = [env.get_clicks_real(arm, idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
+        real_rewards = [env.get_rewards(arm, idx_subcampaign)[1] for idx_subcampaign, arm in
+                        enumerate(arms_to_pull)]
+        # Pull arms and get the rewards (number of clicks with noise).
+        noisy_rewards = [env.get_rewards(arm, idx_subcampaign)[2] for idx_subcampaign, arm in
+                         enumerate(arms_to_pull)]
 
         # Calculate regression error.
         current_regression_error = [abs(reward - real_value_for_arm) for (reward, real_value_for_arm) in
