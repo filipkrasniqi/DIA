@@ -54,12 +54,12 @@ def plot_regression(current_folder, arms, environment, idx_subcampaign, t, save_
 
 # Functions characteristics.
 bids = np.array([
-    [5, 5, 5],
-    [1, 1, 1],
-    [3, 3, 3],
-    [1, 1, 1],
-    [2, 2, 2]])
-slopes = -1 * np.array([
+    [15, 10, 20],
+    [20, 30, 15],
+    [15, 25, 30],
+    [27, 22, 14],
+    [13, 29, 33]])
+slopes = np.array([
     [0.05, 0.03, 0.01],
     [0.03, 0.01, 0.04],
     [0.04, 0.04, 0.01],
@@ -137,7 +137,7 @@ env = Environment(
     slopes=slopes,
     max_clicks=max_clicks)
 arms = env.get_arms()
-# env.plot()
+env.plot()
 
 # CLAIRVOYANT ALGORITHM.
 

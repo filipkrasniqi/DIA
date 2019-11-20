@@ -16,7 +16,7 @@ class GPTSLearner:
         kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
         self.gp = GaussianProcessRegressor(
             kernel=kernel,
-            alpha=1e-10,
+            alpha=1e-7,
             normalize_y=True,
             n_restarts_optimizer=10,
             random_state=17)
