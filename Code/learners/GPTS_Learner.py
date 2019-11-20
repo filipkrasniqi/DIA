@@ -4,7 +4,7 @@ from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 
 
 class GPTSLearner:
-    def __init__(self, arms, sigma):
+    def __init__(self, arms, sigma,restart_optimizer=0,cost_kernel=1,lenght_scale_kernel=0.1):
         self.name_learner = "GPTS learner"
         self.arms = arms
         self.means = np.ones(len(arms))
@@ -13,13 +13,13 @@ class GPTSLearner:
         self.collected_rewards = list()
         self.user_sampled = [0, 0, 0]
 
-        kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
+        kernel = C(cost_kernel, (1e-3, 1e3)) * RBF(lenght_scale_kernel, (1e-3, 1e3))
         self.gp = GaussianProcessRegressor(
             kernel=kernel,
             alpha=1e-10,
             normalize_y=True,
-            n_restarts_optimizer=10,
-            random_state=17)
+            n_restarts_optimizer=restart_optimizer
+        )
 
     def update(self, idx_pulled_arm, reward, user_sampled):
         self.pulled_arms.append(self.arms[idx_pulled_arm])
@@ -36,6 +36,14 @@ class GPTSLearner:
 
         self.user_sampled[user_sampled] += 1
 
-    def pull_arms(self):
-        values = self.gp.sample_y(np.atleast_2d(self.arms).T)
-        return np.where(values > 0, values, 0)
+    def sample_arms(self):
+        return np.random.normal(self.means, self.sigmas)
+
+        # values = self.gp.sample_y(np.atleast_2d(self.arms).T)
+        # return np.where(values > 0, values, 0)
+
+    def pull_arm(self):
+        sampled_values = np.random.normal(self.means, self.sigmas)
+        return max(0,np.argmax(sampled_values))
+
+
