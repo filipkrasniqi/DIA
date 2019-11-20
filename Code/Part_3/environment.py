@@ -186,7 +186,19 @@ class Environment:
         return arms
 
     def get_rewards(self, budget, idx_subcampaign):
-        return self.subcampaigns[idx_subcampaign].get_rewards(budget)
+        # Get batch of users.
+        batch_size = 100
+        batch_users_sampled = [0, 0, 0]
+        batch_real = list()
+        batch_noisy = list()
+
+        for i in range(0, batch_size):
+            reward = self.subcampaigns[idx_subcampaign].get_rewards(budget)
+            batch_users_sampled[reward[0]] += 1
+            batch_real.append(reward[1])
+            batch_noisy.append(reward[2])
+
+        return tuple(batch_users_sampled), sum(batch_real) / len(batch_real), sum(batch_noisy) / len(batch_noisy)
 
     def get_clicks_real(self, budget, idx_subcampaign):
         return self.subcampaigns[idx_subcampaign].get_clicks_real(budget)
