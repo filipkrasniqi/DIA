@@ -151,7 +151,8 @@ optimum = combinatorial[0]
 # REAL ALGORITHM.
 
 rewards_per_round = list()
-regression_error = list()
+regression_errors = list()
+avg_regression_errors = list()
 arm_obs = np.array(list())
 
 gpts_learners = list()
@@ -178,12 +179,11 @@ for t in range(1, T + 1):
     # Pull arms and get the rewards (number of clicks with noise).
     noisy_rewards = [reward[2] for reward in rewards]
 
-    # Calculate regression error.
-    current_regression_error = [abs(reward - real_value_for_arm) for (reward, real_value_for_arm) in
-                                zip(noisy_rewards, real_rewards)]
-    # Regression error is avg(pulled_clicks - real_clicks).
-    error = np.max(np.array(current_regression_error))
-    regression_error.append(error)
+    # Calculate regression error of first subcampaign.
+    error = abs(noisy_rewards[0]-real_rewards[0])
+    regression_errors.append(error)
+    avg_error = sum(regression_errors) / len(regression_errors)
+    avg_regression_errors.append(avg_error)
 
     # For each subcampaign, update respective learner.
     for idx_subcampaign in range(0, n_subcampaigns):
@@ -223,7 +223,7 @@ plt.show()
 plt.figure(1)
 plt.xlabel("t")
 plt.ylabel("Avg Regression Error")
-plt.plot(regression_error, 'b')
+plt.plot(avg_regression_errors, 'b')
 plt.savefig(cur_fold + '/avrregerr.png')
 plt.show()
 
