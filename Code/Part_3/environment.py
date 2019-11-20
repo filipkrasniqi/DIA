@@ -16,7 +16,7 @@ class User:
         self.max_clicks_subcampaign = max_value_subcampaign
 
     def get_clicks_real(self, bid):
-        return max((1 - np.exp(-self.slope * (bid - self.bid))), 0)
+        return max(self.max_clicks_subcampaign * (1 - np.exp(-self.slope * (bid - self.bid))), 0)
 
     def get_clicks_noise(self, bid):
         y = self.get_clicks_real(bid)
