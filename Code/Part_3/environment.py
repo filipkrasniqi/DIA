@@ -34,10 +34,8 @@ class User:
         plt.xticks(np.arange(0, self.max_budget + 1, 20))
         plt.ylabel("Number of clicks")
         plt.ylim((0, self.max_clicks_subcampaign + self.max_clicks_subcampaign / 10))
-        plt.yticks(np.arange(
-            0,
-            self.max_clicks_subcampaign + self.max_clicks_subcampaign / 10,
-            self.max_clicks_subcampaign / 10))
+        plt.yticks(np.arange(0, max(y) + max(y) / 10, max(y) / 10))
+        plt.grid()
         plt.show()
 
 
@@ -65,11 +63,12 @@ class Subcampaign:
                 slope=self.slopes[idx_user],
                 sigma=self.sigma,
                 idx=idx_user,
-                max_value_subcampaign=max(self.max_clicks))
+                max_value_subcampaign=self.max_clicks[idx_user])
             self.users.append(new_user)
 
     def get_clicks_real(self, bid):
-        return np.sum(sub.get_clicks_real(bid) * self.user_probabilities[i] for i, sub in enumerate(self.users))
+        number_of_clicks = np.sum(sub.get_clicks_real(bid) * self.user_probabilities[i] for i, sub in enumerate(self.users))
+        return number_of_clicks
 
     def get_clicks_noise(self, bid):
         y = self.get_clicks_real(bid)
@@ -105,6 +104,8 @@ class Subcampaign:
         return max(0, number_of_clicks + noise)
 
     def plot(self):
+        for user in self.users:
+            user.plot(self.idx)
         x = np.linspace(0, self.max_budget, 100)
         y = [self.get_clicks_real(bid) for bid in x]
         plt.plot(x, y)
@@ -114,10 +115,8 @@ class Subcampaign:
         plt.xticks(np.arange(0, self.max_budget + 1, 20))
         plt.ylabel("Number of clicks")
         plt.ylim((0, max(self.max_clicks) + max(self.max_clicks) / 10))
-        plt.yticks(np.arange(
-            0,
-            max(self.max_clicks) + max(self.max_clicks) / 10,
-            max(self.max_clicks) / 10))
+        plt.yticks(np.arange(0, max(y) + max(y) / 10, max(y) / 10))
+        plt.grid()
         plt.show()
 
 

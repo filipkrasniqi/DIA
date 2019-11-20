@@ -46,9 +46,9 @@ def plot_regression(current_folder, arms, environment, idx_subcampaign, t, save_
     plt.ylim((0, 3))
     plt.legend(loc='lower right')
     plt.title("Subcampaign {}, t = {}".format(idx_subcampaign, t))
+    plt.grid()
     if save_figure:
         plt.savefig('{}/prediction_subcampaign_{}.png'.format(current_folder, idx_subcampaign))
-
     plt.show()
 
 
