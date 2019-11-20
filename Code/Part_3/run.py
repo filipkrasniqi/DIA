@@ -51,6 +51,24 @@ def plot_regression(current_folder, arms, environment, idx_subcampaign, t, save_
 
     plt.show()
 
+def sample_gpts_arms(learners):
+    # Get one sample from each GPTS learner.
+    samples = list()
+    for idx_subcampaign in range(0, n_subcampaigns):
+        clicks = learners[idx_subcampaign].sample_arms()
+        samples.append(clicks)
+    return samples
+
+def real_sampling(arms, env):
+    # Get real values from all arms, from all subcampaigns.
+    samples = list()
+    for idx_subcampaign in range(0, n_subcampaigns):
+        vet = list()
+        for j in range(0, len(arms)):
+            clicks = env.get_clicks_real(arms[j], idx_subcampaign)
+            vet.append(clicks)
+        samples.append(vet)
+    return samples
 
 # Functions characteristics.
 bids = np.array([
@@ -82,11 +100,13 @@ user_probabilities = [[
 sigma_env_n = [0.1, 1, 5]
 n_subcampaigns = 5
 n_users_x_subcampaign = 3
-n_arms_sub = 21
-total_budget = 200
+n_arms_sub = 41
+total_budget = 100
 min_daily_budget = 0.0
 max_daily_budget = total_budget
-T = 100
+T = 500
+n_experiments = 1
+restart_optimizer = 0
 
 # Folders to save images.
 curr_dir = os.getcwd()
@@ -97,28 +117,6 @@ env_dir = outputs_dir + "2vars/"
 if not os.path.exists(env_dir):
     os.mkdir(env_dir)
 
-
-def pull_gpts_arms(learners):
-    # Get one sample from each GPTS learner.
-    samples = list()
-    for idx_subcampaign in range(0, n_subcampaigns):
-        clicks = learners[idx_subcampaign].pull_arms()
-        samples.append(clicks)
-    return samples
-
-
-def real_sampling(arms, env):
-    # Get real values from all arms, from all subcampaigns.
-    samples = list()
-    for idx_subcampaign in range(0, n_subcampaigns):
-        vet = list()
-        for j in range(0, len(arms)):
-            clicks = env.get_clicks_real(arms[j], idx_subcampaign)
-            vet.append(clicks)
-        samples.append(vet)
-    return samples
-
-
 # One iteration for each combination of sigma and user probabilities.
 for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
     sigma_env = s_p[0]
@@ -127,9 +125,6 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
     cur_fold = env_dir + str(k)
     if not os.path.exists(cur_fold):
         os.mkdir(cur_fold)
-
-    gpts_rewards_per_experiment_sub_1 = list()
-    gaussian_error_per_experiment_1 = list()
 
     env = Environment(
         n_arms=n_arms_sub,
@@ -141,8 +136,9 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
         bids=bids,
         slopes=slopes,
         max_clicks=max_clicks)
+
     arms = env.get_arms()
-    env.plot()
+    # env.plot()
 
     # CLAIRVOYANT ALGORITHM.
 
@@ -153,73 +149,86 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
     # Get optimal value of clicks for the campaign (clairvoyant).
     optimum = combinatorial[0]
 
+    rewards_per_exp = []
+
     # REAL ALGORITHM.
-
-    rewards_per_round = list()
-    regression_error = list()
-    arm_obs = np.array(list())
-
-    gpts_learners = list()
-    # For each subcampaign, define a GPTS learner.
-    for idx_subcampaign in range(0, n_subcampaigns):
-        gpts_learners.append(GPTSLearner(arms=arms, sigma=sigma_env))
-
     start_time = time.time()
-    # Every round, pull arms and update rewards.
-    for t in range(1, T + 1):
-        # Sample all the learners.
-        samples = pull_gpts_arms(gpts_learners)
-        # Run the DP algorithm in order to get optimal distribution of budgets between subcampaigns.
-        combinatorial_alg = DPAlgorithm(arms, n_subcampaigns, samples, min_daily_budget, total_budget)
-        combinatorial = combinatorial_alg.get_budgets()
-        # Array containing optimal allocation of budgets.
-        arms_to_pull = combinatorial[1]
-        # Total budget instantiated for the campaign.
-        instantiated_budget = np.sum(arms_to_pull)
+    # Iterations per experiments
+    for exp in range(0, n_experiments):
 
-        rewards = [env.get_rewards(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
-        # Get real number of clicks from a subcampaign for a certain budget.
-        real_rewards = [reward[1] for reward in rewards]
-        # Pull arms and get the rewards (number of clicks with noise).
-        noisy_rewards = [reward[2] for reward in rewards]
+        rewards_per_round = []
+        regression_error = []
+        gpts_learners = []
 
-        # Calculate regression error.
-        current_regression_error = [abs(reward - real_value_for_arm) for (reward, real_value_for_arm) in
-                                    zip(noisy_rewards, real_rewards)]
-        # Regression error is avg(pulled_clicks - real_clicks).
-        error = np.max(np.array(current_regression_error))
-        regression_error.append(error)
-
-        # For each subcampaign, update respective learner.
+        # For each subcampaign, define a GPTS learner.
         for idx_subcampaign in range(0, n_subcampaigns):
-            # Get index of pulled arm.
-            idx_pulled_arm = gpts_learners[idx_subcampaign].arms.tolist().index(arms_to_pull[idx_subcampaign])
-            gpts_learners[idx_subcampaign].update(
-                idx_pulled_arm=idx_pulled_arm,
-                reward=noisy_rewards[idx_subcampaign],
-                user_sampled=rewards[idx_subcampaign][0])
+            gpts_learners.append(GPTSLearner(arms=arms, sigma=sigma_env))
 
-            plot_regression(cur_fold, arms, env, idx_subcampaign, t)
+        # Every round, pull arms and update rewards.
+        for t in range(1, T + 1):
 
-            if t % (T / 2) == 0:
-                # Plot every subcampaign every 50 rounds.
-                plot_regression(cur_fold, arms, env, idx_subcampaign, t)
+            # Sample all the learners.
+            samples = sample_gpts_arms(gpts_learners)
+            # Run the DP algorithm in order to get optimal distribution of budgets between subcampaigns.
+            combinatorial_alg = DPAlgorithm(arms, n_subcampaigns, samples, min_daily_budget, total_budget)
+            combinatorial = combinatorial_alg.get_budgets()
+            # Array containing optimal allocation of budgets.
+            arms_to_pull = combinatorial[1]
+            # Total budget instantiated for the campaign.
+            instantiated_budget = np.sum(arms_to_pull)
 
-        rewards_per_round.append(np.sum(real_rewards))
+            # TODO Cambia Regression Error
+            rewards = [env.get_rewards(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
+            # Get real number of clicks from a subcampaign for a certain budget.
+            real_rewards = [reward[1] for reward in rewards]
+            # Pull arms and get the rewards (number of clicks with noise).
+            noisy_rewards = [reward[2] for reward in rewards]
 
-        # Print time necessary for 10 epochs.
-        if t % 10 == 0:
-            end_time = time.time()
-            t_time = end_time - start_time
-            print("%d - time: %d min %d sec" % (t, int(t_time / 60), int(t_time % 60)))
-            start_time = time.time()
+            # Calculate regression error.
+            current_regression_error = [abs(reward - real_value_for_arm) for (reward, real_value_for_arm) in
+                                        zip(noisy_rewards, real_rewards)]
+            # Regression error is avg(pulled_clicks - real_clicks).
+            error = np.max(np.array(current_regression_error))
+            regression_error.append(error)
+
+            # For each subcampaign, update respective learner.
+            for idx_subcampaign in range(0, n_subcampaigns):
+                # Get index of pulled arm.
+                idx_pulled_arm = gpts_learners[idx_subcampaign].arms.tolist().index(arms_to_pull[idx_subcampaign])
+                gpts_learners[idx_subcampaign].update(
+                    idx_pulled_arm=idx_pulled_arm,
+                    reward=noisy_rewards[idx_subcampaign],
+                    user_sampled=rewards[idx_subcampaign][0],
+                )
+
+                # plot_regression(cur_fold, arms, env, idx_subcampaign, t)
+
+                # if t % (T / 2) == 0:
+                    # Plot every subcampaign every 50 rounds.
+                    # plot_regression(cur_fold, arms, env, idx_subcampaign, t)
+
+            rewards_per_round.append(np.sum(real_rewards))
+
+            # Print time necessary for 10 epochs.
+            '''
+            if t % 10 == 0:
+                end_time = time.time()
+                t_time = end_time - start_time
+                print("%d - time: %d min %d sec" % (t, int(t_time / 60), int(t_time % 60)))
+                start_time = time.time()
+            '''
+
+        # Store the rewards for an experiment
+        rewards_per_exp.append(rewards_per_round)
+        print("Experiment: ",exp)
+
 
     # PLOT CUMULATIVE REGRET.
 
     plt.figure(0)
     plt.xlabel("t")
     plt.ylabel("Cumulative Regret")
-    plot1 = np.cumsum(optimum - rewards_per_round)
+    plot1 = np.cumsum(np.mean(optimum - rewards_per_exp,axis=0))
     plt.plot(plot1, 'r')
     # save log in file
     plt.savefig(cur_fold + '/cumreg.png')
@@ -234,13 +243,14 @@ for k, s_p in enumerate(itertools.product(sigma_env_n, user_probabilities)):
     plt.savefig(cur_fold + '/avrregerr.png')
     plt.show()
 
-    # PLOT REGRESSION ERROR FOR EACH SUBCAMPAIGN.
-
+    # PLOT GP ESTIMATED FOR EACH SUBCAMPAIGN.
+    '''
     for idx_subcampaign in range(n_subcampaigns):
-        plot_regression(cur_fold, arms, env, idx_subcampaign, save_figure=True)
-
+        plot_regression(cur_fold, arms, env, idx_subcampaign, t,save_figure=True)
+    
     log = str(sigma_env) + "\n" + str(prob_users)
     f = open(cur_fold + "/log.txt", "w")
     f.write(log)
     f.close()
     print("Completed {} out of {}".format(k + 1, len(sigma_env_n) * len(user_probabilities)))
+    '''
