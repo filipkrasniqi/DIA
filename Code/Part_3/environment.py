@@ -3,47 +3,39 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 
-RESOLUTION = 20
 random.seed(17)
 
 
 class User:
-    def __init__(self, max_budget, bid, slope, max_clicks, idx, max_value_subcampaign):
+    def __init__(self, max_budget, bid, slope, sigma, idx, max_value_subcampaign):
         self.max_budget = max_budget
         self.bid = bid
         self.slope = slope
-        self.max_clicks = max_clicks
-        self.x = list()
-        self.y = list()
+        self.sigma = sigma
         self.idx = idx
         self.max_clicks_subcampaign = max_value_subcampaign
-        self.generate_values()
 
-    def generate_values(self):
-        # Linear space from 0 to bid value, y is 0 for everything.
-        x_0 = np.linspace(0, self.bid, self.bid * RESOLUTION)
-        y_0 = np.zeros(self.bid * RESOLUTION)
+    def get_clicks_real(self, bid):
+        return max(self.max_clicks_subcampaign * (1 - np.exp(-self.slope * (bid - self.bid))), 0)
 
-        # Linear space from bid value to max_budget, y is exponential.
-        x_1 = np.linspace(self.bid, self.max_budget, (self.max_budget - self.bid) * RESOLUTION)
-        x = np.linspace(0, self.max_budget - self.bid, (self.max_budget - self.bid) * RESOLUTION)
-        y_1 = (1 - np.exp(self.slope * x)) * self.max_clicks
-
-        self.x = np.append(x_0, x_1)
-        self.y = np.append(y_0, y_1)
+    def get_clicks_noise(self, bid):
+        y = self.get_clicks_real(bid)
+        mu, sigma = 0, self.sigma
+        noise = np.random.normal(mu, sigma)
+        return max(0, y + noise)
 
     def plot(self, idx_subcampaign):
-        plt.plot(self.x, self.y)
+        x = np.linspace(0, self.max_budget, 100)
+        y = [self.get_clicks_real(bid) for bid in x]
+        plt.plot(x, y)
         plt.title("Subcampaign {}, User {}".format(idx_subcampaign, self.idx))
         plt.xlabel("Daily budget [€]")
         plt.xlim((0, self.max_budget))
         plt.xticks(np.arange(0, self.max_budget + 1, 20))
         plt.ylabel("Number of clicks")
         plt.ylim((0, self.max_clicks_subcampaign + self.max_clicks_subcampaign / 10))
-        plt.yticks(np.arange(
-            0,
-            self.max_clicks_subcampaign + self.max_clicks_subcampaign / 10,
-            self.max_clicks_subcampaign / 10))
+        plt.yticks(np.arange(0, max(y) + max(y) / 10, max(y) / 10))
+        plt.grid()
         plt.show()
 
 
@@ -59,46 +51,30 @@ class Subcampaign:
         self.slopes = slopes
         self.sigma = sigma
         self.users = list()
-        self.x = list()
-        self.y = list()
         self.idx = idx
         self.generate()
 
     def generate(self):
         # Generate a curve for each user.
         for idx_user in range(self.n_users):
-            new_user = User(self.max_budget,
-                            self.bids[idx_user],
-                            self.slopes[idx_user],
-                            self.max_clicks[idx_user],
-                            idx_user,
-                            max(self.max_clicks))
+            new_user = User(
+                max_budget=self.max_budget,
+                bid=self.bids[idx_user],
+                slope=self.slopes[idx_user],
+                sigma=self.sigma,
+                idx=idx_user,
+                max_value_subcampaign=self.max_clicks[idx_user])
             self.users.append(new_user)
-        # Create subcampaign curve.
-        self.x = self.users[0].x
-        self.y = self.x.copy()
-        # Create perfect curve with known probabilities.
-        for i in range(len(self.x)):
-            self.y[i] = 0
-            y_temp = 0
-            for pos in range(0, self.n_users):
-                y_temp = y_temp + self.users[pos].y[i] * self.user_probabilities[pos]
-            self.y[i] = y_temp
 
-    def get_clicks_noise(self, budget):
-        y = self.get_clicks_real(budget)
+    def get_clicks_real(self, bid):
+        number_of_clicks = np.sum(sub.get_clicks_real(bid) * self.user_probabilities[i] for i, sub in enumerate(self.users))
+        return number_of_clicks
+
+    def get_clicks_noise(self, bid):
+        y = self.get_clicks_real(bid)
         mu, sigma = 0, self.sigma
         sample = np.random.normal(mu, sigma)
         return max(0, y + sample)
-
-    def get_clicks_real(self, budget):
-        # Search for the index representing the right budget on the x axis.
-        index = 0
-        while budget > self.x[index]:
-            index = index + 1
-
-        # Return number of clicks.
-        return self.y[index]
 
     def get_rewards(self, budget):
         # Select user clicking on ads depending on probabilities.
@@ -116,42 +92,31 @@ class Subcampaign:
         return user_to_sample, real_reward, noisy_reward
 
     def sample_real(self, budget, idx_user):
-        # Search for the index representing the right budget on the x axis.
-        index = 0
-        while budget > self.x[index]:
-            index = index + 1
-
         # User curve sampling.
-        number_of_clicks = self.users[idx_user].y[index]
+        number_of_clicks = self.users[idx_user].get_clicks_real(budget)
         return number_of_clicks
 
     def sample_noise(self, budget, idx_user):
-        # Search for the index representing the right budget on the x axis.
-        index = 0
-        while budget > self.x[index]:
-            index = index + 1
-
         # User curve sampling.
-        number_of_clicks = self.users[idx_user].y[index]
+        number_of_clicks = self.users[idx_user].get_clicks_noise(budget)
         mu, sigma = 0, self.sigma
-        sample = np.random.normal(mu, sigma)
-        return max(0, number_of_clicks + sample)
+        noise = np.random.normal(mu, sigma)
+        return max(0, number_of_clicks + noise)
 
     def plot(self):
-        for u in range(0, self.n_users):
-            # self.users[u].plot(self.idx)
-            pass
-        plt.plot(self.x, self.y)
+        for user in self.users:
+            user.plot(self.idx)
+        x = np.linspace(0, self.max_budget, 100)
+        y = [self.get_clicks_real(bid) for bid in x]
+        plt.plot(x, y)
         plt.title("Subcampaign {}, aggregated curve".format(self.idx))
         plt.xlabel("Daily budget [€]")
         plt.xlim((0, self.max_budget))
         plt.xticks(np.arange(0, self.max_budget + 1, 20))
         plt.ylabel("Number of clicks")
         plt.ylim((0, max(self.max_clicks) + max(self.max_clicks) / 10))
-        plt.yticks(np.arange(
-            0,
-            max(self.max_clicks) + max(self.max_clicks) / 10,
-            max(self.max_clicks) / 10))
+        plt.yticks(np.arange(0, max(y) + max(y) / 10, max(y) / 10))
+        plt.grid()
         plt.show()
 
 
@@ -159,14 +124,13 @@ class Environment:
 
     def __init__(self, n_arms, n_users, n_subcampaigns, max_budget, user_probabilities, sigma, bids, slopes,
                  max_clicks):
-        # Arms.
         self.n_arms = n_arms
         self.n_users = n_users
         self.n_subcampaigns = n_subcampaigns
         self.max_budget = max_budget
         self.user_probabilities = user_probabilities
         self.sigma = sigma
-        self.subcampaigns = []
+        self.subcampaigns = list()
 
         for idx_subcampaign in range(0, n_subcampaigns):
             new_subcampaign = Subcampaign(
@@ -186,7 +150,19 @@ class Environment:
         return arms
 
     def get_rewards(self, budget, idx_subcampaign):
-        return self.subcampaigns[idx_subcampaign].get_rewards(budget)
+        # Get batch of users.
+        batch_size = 100
+        batch_users_sampled = [0, 0, 0]
+        batch_real = list()
+        batch_noisy = list()
+
+        for i in range(0, batch_size):
+            reward = self.subcampaigns[idx_subcampaign].get_rewards(budget)
+            batch_users_sampled[reward[0]] += 1
+            batch_real.append(reward[1])
+            batch_noisy.append(reward[2])
+
+        return tuple(batch_users_sampled), sum(batch_real) / len(batch_real), sum(batch_noisy) / len(batch_noisy)
 
     def get_clicks_real(self, budget, idx_subcampaign):
         return self.subcampaigns[idx_subcampaign].get_clicks_real(budget)

@@ -11,17 +11,17 @@ class GPTSLearner:
         self.sigmas = np.ones(len(arms)) * sigma
         self.pulled_arms = list()
         self.collected_rewards = list()
-        self.user_sampled = [0, 0, 0]
+        self.users_sampled = [0, 0, 0]
 
         kernel = C(cost_kernel, (1e-3, 1e3)) * RBF(lenght_scale_kernel, (1e-3, 1e3))
         self.gp = GaussianProcessRegressor(
             kernel=kernel,
-            alpha=1e-10,
+            alpha=1e-7,
             normalize_y=True,
             n_restarts_optimizer=restart_optimizer
         )
 
-    def update(self, idx_pulled_arm, reward, user_sampled):
+    def update(self, idx_pulled_arm, reward, users_sampled):
         self.pulled_arms.append(self.arms[idx_pulled_arm])
         self.collected_rewards.append(reward)
         # Split pulled_arms in elements with at least 2 arrays each one.
@@ -34,7 +34,7 @@ class GPTSLearner:
         self.sigmas = np.maximum(self.sigmas, 1e-2)
         self.means = np.maximum(self.means, 0)
 
-        self.user_sampled[user_sampled] += 1
+        self.users_sampled = [x + y for x, y in zip(self.users_sampled, users_sampled)]
 
     def sample_arms(self):
         return np.random.normal(self.means, self.sigmas)
