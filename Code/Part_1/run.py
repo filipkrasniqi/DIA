@@ -6,11 +6,12 @@ import functools
 
 from Code.Part_1.ContextLearner import ContextLearner
 from Code.Part_1.ProjectEnvironment import ProjectEnvironment
-from Code.learners.SequentialABLearner import SequentialABLearner
 from Code.learners.ContinuousTS_Learner import TS_Learner
-from Code.learners.UCB_Learner import UCB_Learner
+from Code.learners.SequentialABLearner import SequentialABLearner
 
 import pickle
+
+from Code.learners.UCB_Learner import UCB_Learner
 
 env_dir = ProjectEnvironment.get_env_dir()
 
@@ -40,31 +41,31 @@ def gauss(coeff, sigma, t, mu, price):
     return ret_val
 
 matrix_parameters_aggregate = [
-    [[0.01, 600, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-     [0.03, 400, [20, 40, 60, 80], functools.partial(gauss, 160, 5)],
-     [0.03, 300, [20, 40, 60, 80], functools.partial(gauss, 150, 5)],
-     [0.02, 300, [20, 40, 60, 80], functools.partial(gauss, 140, 5)]]
+    [[0.01, 550, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+     [0.03, 350, [20, 40, 60, 80], functools.partial(gauss, 160, 5)],
+     [0.03, 250, [20, 40, 60, 80], functools.partial(gauss, 150, 5)],
+     [0.02, 250, [20, 40, 60, 80], functools.partial(gauss, 140, 5)]]
 ]
 
 matrix_parameters_u1 = [
-            [0.01, 600, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-            [0.01, 400, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-            [0.02, 300, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-            [0.02, 200, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+            [0.015, 600, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+            [0.01, 500, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+            [0.02, 350, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+            [0.02, 250, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
         ]
 
 matrix_parameters_u2 = [
             [0.02, 800, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
             [0.03, 600, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-            [0.04, 300, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+            [0.04, 350, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
             [0.02, 600, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
         ]
 
 matrix_parameters_u3 = [
             [0.02, 600, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-            [0.03, 400, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-            [0.04, 300, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-            [0.02, 200, [20, 40, 60, 80], functools.partial(gauss, 175, 5)]
+            [0.03, 500, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+            [0.04, 350, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+            [0.02, 250, [20, 40, 60, 80], functools.partial(gauss, 175, 5)]
 ]
 
 context_alternatives = [[[0, 1, 2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], [0]], [[0], [1], [2]]]
@@ -72,28 +73,28 @@ context_alternatives = [[[0, 1, 2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], [0]]
 context_matrix_parameters = [
     matrix_parameters_aggregate,
     [
-        [[0.02, 700, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-         [0.02, 500, [20, 40, 60, 80], functools.partial(gauss, 160, 5)],
-         [0.03, 300, [20, 40, 60, 80], functools.partial(gauss, 150, 5)],
-         [0.02, 200, [20, 40, 60, 80], functools.partial(gauss, 140, 5)]],
+        [[0.02, 500, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
+         [0.02, 350, [20, 40, 60, 80], functools.partial(gauss, 160, 5)],
+         [0.03, 150, [20, 40, 60, 80], functools.partial(gauss, 150, 5)],
+         [0.02, 100, [20, 40, 60, 80], functools.partial(gauss, 140, 5)]],
 
         matrix_parameters_u3
     ],
     [
         [
-            [0.02, 600, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
-             [0.02, 400, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
-             [0.03, 300, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
-             [0.02, 200, [20, 40, 60, 80], functools.partial(gauss, 75, 8)]
+            [0.02, 400, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
+             [0.02, 200, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
+             [0.03, 150, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
+             [0.02, 100, [20, 40, 60, 80], functools.partial(gauss, 75, 8)]
         ],
         matrix_parameters_u2
     ],
     [
         [
-            [0.02, 650, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
-            [0.03, 480, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
-            [0.04, 280, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
-            [0.02, 350, [20, 40, 60, 80], functools.partial(gauss, 75, 8)]
+            [0.02, 500, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
+            [0.03, 350, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
+            [0.04, 200, [20, 40, 60, 80], functools.partial(gauss, 75, 6)],
+            [0.02, 250, [20, 40, 60, 80], functools.partial(gauss, 75, 8)]
         ],
         matrix_parameters_u1
     ],
@@ -109,7 +110,7 @@ max_price = 150
 n_arms = math.ceil(math.pow(T * math.log(T, 10), 0.25))
 arms = np.linspace(min_price, max_price, num=n_arms)
 
-min_confidence = 0.95  # this is 1-alpha
+min_confidence = 0.90  # this is 1-alpha
 alpha = 1 - min_confidence
 beta = 0.05
 delta = 0.001
@@ -119,11 +120,11 @@ test_T = int(portion_samples_ab_testing * T)
 norm_dist = stats.norm(0, 1)
 z_a, z_b = norm_dist.pdf(1 - alpha), norm_dist.pdf(beta)
 do_sequential_AB = False
-do_UCB = False
-do_TS = False
+do_UCB = True
+do_TS = True
 
 coeff_window_length = 3
-window_length = int(3 * math.pow(T, 0.5))
+window_length = int(coeff_window_length * math.pow(T, 0.5))
 do_UCB_wdw = True
 do_TS_wdw = True
 plot_env = False
@@ -158,12 +159,13 @@ def train(learner_constructor, window_length = None):
             subcontext_current_clearner = None
             for idx_c, (c_learner, rewards, user, subcontext, demands) in enumerate(
                     zip(c_learners, rewards_per_arm, users, subcontexts, demands_per_arm)):
-                idxs_arm = c_learner.pull_arm(t, rewards, demands, user)
+                idxs_arm_c_learner = c_learner.pull_arm(t, rewards, demands, user)
                 if idx_c == single_best_context:
-                    idxs_arm_current_clearner = idxs_arm
-                    subcontext_current_clearner = subcontext
+                    pulled_arms_current_best_context = idxs_arm_c_learner
+                    drawn_subcontexts_current_best_context = subcontext
+                    rewards_current_best_context = rewards
             # ora lo faccio sul serio!
-            env.round_for_arm(idxs_arm_current_clearner, t, subcontext_current_clearner)
+            env.round_for_arm(pulled_arms_current_best_context, t, drawn_subcontexts_current_best_context, rewards_current_best_context)
         plots_for_sigma.append(c_learners[0].learners[0].plot(env))
 
     return plots_for_sigma
@@ -184,15 +186,14 @@ def train_context(learner_constructor, window_length=None):
             env.plot_context(4, T)
         for t in range(1, T+1):
             rewards_per_arm, demands_per_arm, subcontexts, users = env.round_context(t)
-            idxs_arm_current_clearner = 0
-            subcontext_current_clearner = None
             for idx_c, (c_learner, rewards, user, subcontext, demands) in enumerate(zip(c_learners, rewards_per_arm, users, subcontexts, demands_per_arm)):
-                idxs_arm = c_learner.pull_arm(t, rewards, demands, user)
+                idxs_arm_c_learner = c_learner.pull_arm(t, rewards, demands, user)
                 if idx_c == best_context:
-                    idxs_arm_current_clearner = idxs_arm
-                    subcontext_current_clearner = subcontext
+                    pulled_arms_current_best_context = idxs_arm_c_learner
+                    drawn_subcontexts_current_best_context = subcontext
+                    rewards_current_best_context = rewards
             # ora lo faccio sul serio!
-            env.round_for_arm(idxs_arm_current_clearner, t, subcontext_current_clearner)
+            env.round_for_arm(pulled_arms_current_best_context, t, drawn_subcontexts_current_best_context, rewards_current_best_context)
 
             if t % context_change_period == context_change_period - 1:
                 results_alternatives = []

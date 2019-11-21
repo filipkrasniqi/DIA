@@ -9,7 +9,7 @@ import os
 
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
-env_dir = outputs_dir+"v01_with_context/"
+env_dir = outputs_dir+"v04_with_context/"
 
 import pandas as pd
 
@@ -119,40 +119,46 @@ class ProjectEnvironment(Environment):
     Called after round_context to compute the regret, as
     the learners need the execution of round_context to know what's going on
     """
-    def round_for_arm(self, idx_pulled_arms, t, users):
+    def round_for_arm(self, idx_pulled_arms, t, users, rewards):
         regret_t, real_reward_t = 0, 0
-        for idx, (idx_arm, user) in enumerate(zip(idx_pulled_arms, users)):
+        for idx, (idx_arm, idx_user) in enumerate(zip(idx_pulled_arms, users)):
             users = self.contexts[self.selected_context]
             subcontexts = self.contexts_alternatives[self.selected_context]
-            subcontext = self.get_subcontext_from_user(subcontexts, user)
+            subcontext = self.get_subcontext_from_user(subcontexts, idx_user)
             price = self.arms[idx_arm]
-            idx_reward = self.batch_size - idx
-            reward = self.all_rewards[idx_reward]
+            reward = rewards[idx]
             real_sample = users[subcontext].demand(price, t)
             real_reward = real_sample * price
             contexts_optimals = []
+            optimum, _ = users[subcontext].optimum(t)
+            contexts_optimals.append(optimum)
+            """
             for idx_c, context in enumerate(self.contexts):
-                context_optimal = 0
+                # given user, find optimum associated to that context
+                
+
                 for user, p in zip(context, self.probabilities_context(idx_c, t)):
                     optimum, optimum_arm = user.optimum(t)
-                    context_optimal += p * optimum
-                contexts_optimals.append(context_optimal)
-            best_context = np.max(contexts_optimals)
-            regret_t += best_context - real_reward
+                    context_optimal += optimum
+            """
+            best_reward = np.max(contexts_optimals)
+            regret_t += best_reward - real_reward
             real_reward_t += real_reward
-            self.drawn_users.append(user)
+            self.drawn_users.append(idx_user)
         self.regret.append(regret_t)
         self.real_rewards.append(real_reward_t)
-        return reward, user
+        return reward, idx_user
     """
     Return, given T, best rewards for each t
     """
-    def best_rewards_t(self, T):
+    def best_rewards_t(self, T, users):
         best_rewards = []
         for t in range(1, T+1):
             for idx_c, context in enumerate(self.contexts):
                 context_optimal = 0
                 contexts_optimals = []
+                optimum, _ = users[subcontext].optimum(t)
+                contexts_optimals.append(optimum)
                 for user, p in zip(context, self.probabilities_context(idx_c, t)):
                     optimum, optimum_arm = user.optimum(t)
                     context_optimal += p * optimum
