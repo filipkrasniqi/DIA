@@ -303,3 +303,5 @@ dmypy.json
 
 # End of https://www.gitignore.io/api/python,pycharm+all,jupyternotebooks
 Code/Part_1/outputs/
+Code/Part_1/*.png
+Code/Part_3/outputs/
