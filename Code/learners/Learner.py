@@ -139,17 +139,10 @@ class Learner:
         real_rewards = env.real_rewards
         # print(len(regret_history), len(cumulative_regret_history), len(real_rewards))
         x = list(range(len(real_rewards)))
-
-<<<<<<< HEAD:Code/learners/Learner.py
         Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner,
                                    self.sigma, curr_dir_env)
         Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner,
                                    self.sigma, curr_dir_env, also_cumulative=True)
-
-=======
-        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env)
-        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env, also_cumulative = True)
->>>>>>> dev:Code/Part_1/Learner.py
         # print functions
         demand_mapping = []
         for user, (x, y) in enumerate(self.samples_user):
@@ -187,7 +180,7 @@ class Learner:
 
             plt.savefig("{}demand_{}.png".format(curr_dir_env, user))
         """
-        return x, real_rewards, regret_history, cumulative_regret_history, (self.idx_c, self.idx_s, demand_mapping)
+        return x, real_rewards, regret_history, cumulative_regret_history, (self.idx_c, self.idx_s, demand_mapping), self.drawn_user
 
     @abstractmethod
     def update(self, pulled_arm, reward, demand, user):
