@@ -195,7 +195,7 @@ for t in range(1, T + 1):
             plot_regression(cur_fold, arms, env, idx_subcampaign, t)
 
     rewards_per_round.append(np.sum(real_rewards))
-    regret = abs(optimum - real_combinatorial_result[0])
+    regret = abs(optimum - np.sum(real_rewards))
     regrets.append(regret)
 
     # Print time necessary for 10 epochs.
