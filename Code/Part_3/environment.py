@@ -5,6 +5,8 @@ import numpy as np
 
 random.seed(17)
 
+BATCH_SIZE = 16
+
 
 class User:
     def __init__(self, max_budget, bid, slope, sigma, idx, max_value_subcampaign):
@@ -52,6 +54,7 @@ class Subcampaign:
         self.sigma = sigma
         self.users = list()
         self.idx = idx
+        self.users_in_batch = [0, 0, 0]
         self.generate()
 
     def generate(self):
@@ -66,42 +69,28 @@ class Subcampaign:
                 max_value_subcampaign=self.max_clicks[idx_user])
             self.users.append(new_user)
 
+        # Get batch of users.
+        for _ in range(0, BATCH_SIZE):
+            # Select user clicking on ads depending on probabilities.
+            user_to_sample = len(self.user_probabilities) - 1
+            for i, prob in enumerate(self.user_probabilities):
+                rand = random.random()
+                if rand <= prob:
+                    user_to_sample = i
+                    break
+            self.users_in_batch[user_to_sample] += 1
+
     def get_clicks_real(self, bid):
-        number_of_clicks = np.sum(sub.get_clicks_real(bid) * self.user_probabilities[i] for i, sub in enumerate(self.users))
-        return number_of_clicks
+        number_of_clicks = 0
+        for idx, user in enumerate(self.users):
+            number_of_clicks += user.get_clicks_real(bid) * self.users_in_batch[idx]
+        return number_of_clicks / BATCH_SIZE
 
     def get_clicks_noise(self, bid):
         y = self.get_clicks_real(bid)
         mu, sigma = 0, self.sigma
         sample = np.random.normal(mu, sigma)
         return max(0, y + sample)
-
-    def get_rewards(self, budget):
-        # Select user clicking on ads depending on probabilities.
-        user_to_sample = len(self.user_probabilities) - 1
-        for i, prob in enumerate(self.user_probabilities):
-            rand = random.random()
-            if rand <= prob:
-                user_to_sample = i
-                break
-
-        # Get rewards.
-        real_reward = self.sample_real(budget, user_to_sample)
-        noisy_reward = self.sample_noise(budget, user_to_sample)
-
-        return user_to_sample, real_reward, noisy_reward
-
-    def sample_real(self, budget, idx_user):
-        # User curve sampling.
-        number_of_clicks = self.users[idx_user].get_clicks_real(budget)
-        return number_of_clicks
-
-    def sample_noise(self, budget, idx_user):
-        # User curve sampling.
-        number_of_clicks = self.users[idx_user].get_clicks_noise(budget)
-        mu, sigma = 0, self.sigma
-        noise = np.random.normal(mu, sigma)
-        return max(0, number_of_clicks + noise)
 
     def plot(self):
         for user in self.users:
@@ -150,19 +139,7 @@ class Environment:
         return arms
 
     def get_rewards(self, budget, idx_subcampaign):
-        # Get batch of users.
-        batch_size = 100
-        batch_users_sampled = [0, 0, 0]
-        batch_real = list()
-        batch_noisy = list()
-
-        for i in range(0, batch_size):
-            reward = self.subcampaigns[idx_subcampaign].get_rewards(budget)
-            batch_users_sampled[reward[0]] += 1
-            batch_real.append(reward[1])
-            batch_noisy.append(reward[2])
-
-        return tuple(batch_users_sampled), sum(batch_real) / len(batch_real), sum(batch_noisy) / len(batch_noisy)
+        return self.subcampaigns[idx_subcampaign].get_clicks_noise(budget)
 
     def get_clicks_real(self, budget, idx_subcampaign):
         return self.subcampaigns[idx_subcampaign].get_clicks_real(budget)
