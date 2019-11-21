@@ -102,7 +102,7 @@ def pull_gpts_arms(learners):
     # Get one sample from each GPTS learner.
     samples = list()
     for idx_subcampaign in range(0, n_subcampaigns):
-        clicks = learners[idx_subcampaign].pull_arms()
+        clicks = learners[idx_subcampaign].sample_arms()
         samples.append(clicks)
     return samples
 
@@ -117,7 +117,6 @@ def real_sampling(arms, env):
             vet.append(clicks)
         samples.append(vet)
     return samples
-
 
 cur_fold = env_dir
 if not os.path.exists(cur_fold):
