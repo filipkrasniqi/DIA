@@ -4,7 +4,7 @@ from sklearn.gaussian_process.kernels import RBF, ConstantKernel as C
 
 
 class GPTSLearner:
-    def __init__(self, arms, sigma,restart_optimizer = 0,cost_kernel=1,lenght_scale_kernel = 0.1):
+    def __init__(self, arms, sigma,restart_optimizer = 0,cost_kernel=1,lenght_scale_kernel = 1):
         self.name_learner = "GPTS learner"
         self.arms = arms
         self.means = np.ones(len(arms))
@@ -35,7 +35,8 @@ class GPTSLearner:
         self.means = np.maximum(self.means, 0)
 
     def sample_arms(self):
-        return np.random.normal(self.means,self.sigmas)
+        values = np.random.normal(self.means,self.sigmas)
+        return np.where(values > 0, values, 0)
 
         #values = self.gp.sample_y(np.atleast_2d(self.arms).T)
         #return np.where(values > 0, values, 0)
