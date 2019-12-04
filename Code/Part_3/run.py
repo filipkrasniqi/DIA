@@ -173,27 +173,33 @@ for t in range(1, T + 1):
     instantiated_budget = np.sum(arms_to_pull)
 
     # Get real number of clicks from a subcampaign for a certain budget.
-    real_rewards = [env.get_clicks_real(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
+    real_rewards = [env.get_clicks_real(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in
+                    enumerate(arms_to_pull)]
     # Pull arms and get the rewards (number of clicks with noise).
-    noisy_rewards = [env.get_rewards(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in enumerate(arms_to_pull)]
-
-    # Calculate regression error of first subcampaign.
-    error = abs(noisy_rewards[0]-real_rewards[0])
-    regression_errors.append(error)
-    avg_error = sum(regression_errors) / len(regression_errors)
-    avg_regression_errors.append(avg_error)
+    noisy_rewards = [env.get_rewards(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in
+                     enumerate(arms_to_pull)]
 
     # For each subcampaign, update respective learner.
     for idx_subcampaign in range(0, n_subcampaigns):
         # Get index of pulled arm.
         idx_pulled_arm = gpts_learners[idx_subcampaign].arms.tolist().index(arms_to_pull[idx_subcampaign])
+
+        # REGRESSION ERROR OF SUBCAMPAIGN 0.
+
+        if idx_subcampaign == 0:
+            regression_error = abs(samples[0][idx_pulled_arm] - real_rewards[0])
+            regression_errors.append(regression_error)
+            avg_error = sum(regression_errors) / len(regression_errors)
+            avg_regression_errors.append(avg_error)
+
         gpts_learners[idx_subcampaign].update(
             idx_pulled_arm=idx_pulled_arm,
             reward=noisy_rewards[idx_subcampaign])
 
         if t % (T / 2) == 0:
             # Plot every subcampaign every 50 rounds.
-            plot_regression(cur_fold, arms, env, idx_subcampaign, t)
+            # plot_regression(cur_fold, arms, env, idx_subcampaign, t)
+            pass
 
     rewards_per_round.append(np.sum(real_rewards))
     regret = abs(optimum - real_combinatorial_result[0])
@@ -205,7 +211,8 @@ for t in range(1, T + 1):
         t_time = end_time - start_time
         print("%d - time: %d min %d sec" % (t, int(t_time / 60), int(t_time % 60)))
         start_time = time.time()
-        print("Regret %f" % regret)
+        print("Regret: %f" % regret)
+        print("Regression error: %f\n" % regression_error)
 
 # PLOT REGRET.
 
@@ -232,8 +239,8 @@ plt.show()
 # PLOT AVERAGE REGRESSION ERROR.
 
 plt.figure(1)
-plt.xlabel("t")
-plt.ylabel("Avg Regression Error")
+plt.xlabel("t (SUBCAMPAIGN 0)")
+plt.ylabel("Avg Regression Error - Number of clicks")
 plt.plot(avg_regression_errors, 'b')
 plt.savefig(cur_fold + '/avrregerr.png')
 plt.show()
