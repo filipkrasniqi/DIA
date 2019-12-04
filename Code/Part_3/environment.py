@@ -5,7 +5,7 @@ import numpy as np
 
 random.seed(17)
 
-BATCH_SIZE = 16
+BATCH_SIZE = 100
 
 
 class User:

@@ -13,10 +13,10 @@ class GPTSLearner:
         self.collected_rewards = list()
         self.users_sampled = [0, 0, 0]
 
-        kernel = C(1.0, (1e-3, 1e3)) * RBF(1.0, (1e-3, 1e3))
+        kernel = C(1.0, (1e-1, 1e1)) * RBF(1.0, (1e-1, 1e1))
         self.gp = GaussianProcessRegressor(
             kernel=kernel,
-            alpha=1e-7,
+            alpha=1e-8,
             normalize_y=True,
             n_restarts_optimizer=10,
             random_state=17)

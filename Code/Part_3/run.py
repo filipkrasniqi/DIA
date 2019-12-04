@@ -107,16 +107,19 @@ def pull_gpts_arms(learners):
     return samples
 
 
-def real_sampling(arms, env):
+def get_all_number_of_clicks(arms, env):
+    """
+        Given an environment and the values of the arms, returns all the real number of clicks.
+    """
     # Get real values from all arms, from all subcampaigns.
-    samples = list()
+    number_of_clicks = list()
     for idx_subcampaign in range(0, n_subcampaigns):
         vet = list()
         for j in range(0, len(arms)):
             clicks = env.get_clicks_real(arms[j], idx_subcampaign)
             vet.append(clicks)
         samples.append(vet)
-    return samples
+    return number_of_clicks
 
 
 cur_fold = env_dir
@@ -142,8 +145,8 @@ arms = env.get_arms()
 # CLAIRVOYANT ALGORITHM.
 
 # Execute combinatorial algorithm to get optimal distribution of budgets to different subcampaigns.
-samples = real_sampling(arms, env)
-perfect_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, samples, min_daily_budget, total_budget).get_budgets()
+number_of_clicks = get_all_number_of_clicks(arms, env)
+perfect_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, number_of_clicks, min_daily_budget, total_budget).get_budgets()
 # Get optimal value of clicks for the campaign (clairvoyant).
 optimum = perfect_combinatorial_result[0]
 
@@ -189,7 +192,7 @@ for t in range(1, T + 1):
         if idx_subcampaign == 0:
             regression_error = abs(samples[0][idx_pulled_arm] - real_rewards[0])
             regression_errors.append(regression_error)
-            avg_error = sum(regression_errors) / len(regression_errors)
+            avg_error = np.average(regression_errors)
             avg_regression_errors.append(avg_error)
 
         gpts_learners[idx_subcampaign].update(
@@ -202,7 +205,7 @@ for t in range(1, T + 1):
             pass
 
     rewards_per_round.append(np.sum(real_rewards))
-    regret = abs(optimum - real_combinatorial_result[0])
+    regret = abs(optimum - np.sum(real_rewards))
     regrets.append(regret)
 
     # Print time necessary for 10 epochs.
@@ -211,8 +214,11 @@ for t in range(1, T + 1):
         t_time = end_time - start_time
         print("%d - time: %d min %d sec" % (t, int(t_time / 60), int(t_time % 60)))
         start_time = time.time()
-        print("Regret: %f" % regret)
-        print("Regression error: %f\n" % regression_error)
+        print("Regret: %.3f" % regret)
+        print("AVG regret: %.3f" % np.average(regrets))
+        print("Regression error: %.3f" % regression_error)
+        print("AVG regression error: %.3f\n" % avg_error)
+
 
 # PLOT REGRET.
 
@@ -240,7 +246,7 @@ plt.show()
 
 plt.figure(1)
 plt.xlabel("t (SUBCAMPAIGN 0)")
-plt.ylabel("Avg Regression Error - Number of clicks")
+plt.ylabel("Avg Regression Error")
 plt.plot(avg_regression_errors, 'b')
 plt.savefig(cur_fold + '/avrregerr.png')
 plt.show()
