@@ -86,7 +86,7 @@ n_arms_sub = 21
 total_budget = 200
 min_daily_budget = 0.0
 max_daily_budget = total_budget
-T = 400
+T = 366
 
 # Folders to save images.
 curr_dir = os.getcwd()
