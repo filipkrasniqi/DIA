@@ -118,7 +118,7 @@ def get_all_number_of_clicks(arms, env):
         for j in range(0, len(arms)):
             clicks = env.get_clicks_real(arms[j], idx_subcampaign)
             vet.append(clicks)
-        samples.append(vet)
+        number_of_clicks.append(vet)
     return number_of_clicks
 
 
