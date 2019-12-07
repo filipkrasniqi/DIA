@@ -2,6 +2,8 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import seaborn as sns
 
 random.seed(17)
 
@@ -145,5 +147,25 @@ class Environment:
         return self.subcampaigns[idx_subcampaign].get_clicks_real(budget)
 
     def plot(self):
+        """
         for idx_subcampaign in range(0, self.n_subcampaigns):
             self.subcampaigns[idx_subcampaign].plot()
+        """
+        # need to sample users to plot them
+        users_in_batch, subcampaigns = [], []
+        for idx_s, probabilities_current_ in enumerate(self.user_probabilities):
+            for _ in range(0, 256):
+                users_in_batch.append(np.random.choice(len(probabilities_current_), 1, p=probabilities_current_)[0])
+                subcampaigns.append(idx_s)
+            df = pd.DataFrame(data={"Class": users_in_batch, "Subcampaign": subcampaigns})
+            ax = sns.barplot(x="Class", y="Class", data=df, estimator=lambda x: len(x) / len(df) * 100)
+            ax.set(ylabel="Percent")
+
+        # g = sns.FacetGrid(pd.DataFrame(data={"Class": users_in_batch, "Subcampaign": subcampaigns}), size=10, row="Subcampaign", legend_out=True)
+        # g = g.map(sns.barplot, "Class")
+        # for t in t_vals:
+        # current_df = df.where(df["Time"] == t).dropna()
+        # sns.countplot(data=current_df, x="Class")
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            plt.show()

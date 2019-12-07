@@ -137,7 +137,7 @@ env = Environment(
     slopes=slopes,
     max_clicks=max_clicks)
 arms = env.get_arms()
-# env.plot()
+env.plot()
 
 # CLAIRVOYANT ALGORITHM.
 
