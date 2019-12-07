@@ -166,6 +166,9 @@ for idx_subcampaign in range(0, n_subcampaigns):
 start_time = time.time()
 # Every round, pull arms and update rewards.
 for t in range(1, T + 1):
+    # Get new batch of users.
+    env.get_new_batch()
+
     # Sample all the learners.
     samples = pull_gpts_arms(gpts_learners)
     # Run the DP algorithm in order to get optimal distribution of budgets between subcampaigns.

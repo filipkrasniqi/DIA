@@ -70,6 +70,11 @@ class Subcampaign:
             self.users.append(new_user)
 
         # Get batch of users.
+        self.get_new_batch()
+
+    def get_new_batch(self):
+        self.users_in_batch = [0, 0, 0]
+
         for _ in range(0, BATCH_SIZE):
             # Select user clicking on ads depending on probabilities.
             user_to_sample = len(self.user_probabilities) - 1
@@ -133,6 +138,10 @@ class Environment:
                 idx=idx_subcampaign,
                 max_clicks=max_clicks[idx_subcampaign])
             self.subcampaigns.append(new_subcampaign)
+
+    def get_new_batch(self):
+        for subcampaign in self.subcampaigns:
+            subcampaign.get_new_batch()
 
     def get_arms(self):
         arms = np.linspace(0, self.max_budget, self.n_arms)
