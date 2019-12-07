@@ -7,7 +7,7 @@ import seaborn as sns
 
 random.seed(17)
 
-BATCH_SIZE = 16
+BATCH_SIZE = 100
 
 
 class User:
@@ -72,6 +72,11 @@ class Subcampaign:
             self.users.append(new_user)
 
         # Get batch of users.
+        self.get_new_batch()
+
+    def get_new_batch(self):
+        self.users_in_batch = [0, 0, 0]
+
         for _ in range(0, BATCH_SIZE):
             # Select user clicking on ads depending on probabilities.
             user_to_sample = len(self.user_probabilities) - 1
@@ -136,6 +141,10 @@ class Environment:
                 max_clicks=max_clicks[idx_subcampaign])
             self.subcampaigns.append(new_subcampaign)
 
+    def get_new_batch(self):
+        for subcampaign in self.subcampaigns:
+            subcampaign.get_new_batch()
+
     def get_arms(self):
         arms = np.linspace(0, self.max_budget, self.n_arms)
         return arms
@@ -148,8 +157,8 @@ class Environment:
 
     def plot(self):
         """
-        for idx_subcampaign in range(0, self.n_subcampaigns):
-            self.subcampaigns[idx_subcampaign].plot()
+                for idx_subcampaign in range(0, self.n_subcampaigns):
+                    self.subcampaigns[idx_subcampaign].plot()
         """
         # need to sample users to plot them
         users_in_batch, subcampaigns = [], []
@@ -161,11 +170,11 @@ class Environment:
             ax = sns.barplot(x="Class", y="Class", data=df, estimator=lambda x: len(x) / len(df) * 100)
             ax.set(ylabel="Percent")
 
-        # g = sns.FacetGrid(pd.DataFrame(data={"Class": users_in_batch, "Subcampaign": subcampaigns}), size=10, row="Subcampaign", legend_out=True)
-        # g = g.map(sns.barplot, "Class")
-        # for t in t_vals:
-        # current_df = df.where(df["Time"] == t).dropna()
-        # sns.countplot(data=current_df, x="Class")
-        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
-        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            # g = sns.FacetGrid(pd.DataFrame(data={"Class": users_in_batch, "Subcampaign": subcampaigns}), size=10, row="Subcampaign", legend_out=True)
+            # g = g.map(sns.barplot, "Class")
+            # for t in t_vals:
+            # current_df = df.where(df["Time"] == t).dropna()
+            # sns.countplot(data=current_df, x="Class")
+            # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+            # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
             plt.show()
