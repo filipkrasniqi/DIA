@@ -235,7 +235,7 @@ plt.ylabel("Regret")
 plot1 = regrets
 plt.plot(plot1, 'r')
 # save log in file
-plt.savefig(cur_fold + '/cumreg.png')
+plt.savefig(cur_fold + '/reg.png')
 plt.show()
 
 # PLOT CUMULATIVE REGRET.
