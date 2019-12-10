@@ -14,7 +14,7 @@ from Code.Part_1.ProjectEnvironment import User, ProjectEnvironment
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
 output_plots_dir = "v1"
-env_dir = outputs_dir+"v02_with_context/"
+env_dir = outputs_dir+"ts_wdw_v1/"
 output_dir = env_dir+"{}/".format(output_plots_dir)
 output_dir_with_context = env_dir+"{}_ctx/".format(output_plots_dir)
 pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -77,7 +77,7 @@ def plot_with_season(to_plot, learner_name, filename, title, x_label, y_label):
     all_y_vals = []
     min_x, max_x = 0, 0
     for sigma in to_plot.keys():
-        ax, y_vals = plot(cumulative_regrets_groupped, learner_name, sigma)
+        ax, y_vals = plot(to_plot, learner_name, sigma)
         all_y_vals += y_vals
         max_x = len(y_vals)
 
@@ -137,7 +137,7 @@ if plot_context:
     total_length = 0
     hue_val = 0
     colors_palette = {}
-    results = pickle.load(open("{}/results_context.pickle".format(env_dir), 'rb'))
+    results = pickle.load(open("{}/results.pickle".format(env_dir), 'rb'))
     sigmas = results["sigma"]
 
     for learner_name in [key for key in results.keys() if "sigma" not in key]:
@@ -164,7 +164,7 @@ if plot_context:
                 history_best_contexts_to_show, sigma_to_show = history_best_contexts, sigma
                 history_results_each_contexts_to_show = history_results_each_context
             for results_learner in results_c_learner:
-                (_, real_rewards, regret_history, cumulative_regret_history, _) = results_learner
+                (_, real_rewards, regret_history, cumulative_regret_history, _, _) = results_learner
                 print()
             cumulative_regrets_groupped[sigma] = cumulative_regret_history
             regrets_groupped[sigma] = regret_history
@@ -176,14 +176,14 @@ if plot_context:
 
         histories_best_contexts[learner_name+" - "+str(sigma_to_show)] = history_best_contexts_to_show
 
-        '''
+
         plot_with_season(cumulative_regrets_groupped, learner_name, "cum_regret", "Cumulative regret", "Time [day]",
                          "Value [$]")
-        plot_with_season(cumulative_regrets_groupped, learner_name,
+        plot_with_season(regrets_groupped, learner_name,
                          "regret", "Regret", "Time [day]", "Value [$]")
-        plot_with_season(cumulative_regrets_groupped, learner_name,
+        plot_with_season(rewards_groupped, learner_name,
                      "rewards", "Rewards", "Time [day]", "Value [$]")
-        '''
+
 
     weeks, learner_names, histories = np.array([]), np.array([]), np.array([])
     for learner_name in histories_best_contexts.keys():

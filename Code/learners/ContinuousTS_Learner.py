@@ -9,43 +9,32 @@ to a Gaussian distribution, on which we estimate mean and std.
 
 
 class TS_Learner(Learner):
-    def __init__(self, arms, idx_c, idx_s, sigma, window=None):
+    def __init__(self, arms, idx_c, idx_s, sigma, batch_size, window=None):
         name_learner = "Thompson-Sampling"
         if window is not None:
             name_learner += " with window {}".format(window)
-        super().__init__(arms, window=window, idx_c=idx_c, idx_s=idx_s, name_learner=name_learner, sigma=sigma)
+        super().__init__(arms, batch_size=batch_size, window=window, idx_c=idx_c, idx_s=idx_s, name_learner=name_learner, sigma=sigma)
         self.average_rewards = [0 for _ in range(self.n_arms)]
-        self.rewards_variance = [float("+inf") for _ in range(self.n_arms)]
+        self.std_reward = [float("+inf") for _ in range(self.n_arms)]
 
-    '''
-    Pull arm s.t. sampling from the Gaussian is higher.
-    '''
-
-    def pull_arm(self, rewards_per_arm, demands_per_arm, user, t):
-        idx_arm = np.argmax(np.random.normal(self.average_rewards, np.power(self.rewards_variance, 0.5)))
-        return Learner.pull_arm(self, rewards_per_arm, demands_per_arm, user, t, idx_arm)
+    """
+    Best arm is the one that from the drawings happens to be the best
+    """
+    def best_arm(self):
+        return np.argmax(np.random.normal(self.average_rewards, self.std_reward))
 
     '''
     Updates Learner observations + own rewards mean and std
     '''
-
-    def update(self, pulled_arm, reward, demand, user):
-        self.update_observations(pulled_arm, reward, demand, user)
-        tot_n = len(self.rewards_per_arm[pulled_arm])
-        if self.window is None or self.window > tot_n:
-            n = int(tot_n)
-        else:
-            n = int(self.window)
-        idxs = list(range(tot_n - n, tot_n))
-        self.average_rewards[pulled_arm] = np.sum(
-            [r for i, r in enumerate(self.rewards_per_arm[pulled_arm]) if i in idxs]) / n
-        self.rewards_variance[pulled_arm] = np.sum(
-            [(reward - self.average_rewards[pulled_arm]) ** 2 for i, reward in
-             enumerate(self.rewards_per_arm[pulled_arm]) if i in idxs]) / (n - 1)
+    def update(self, idx_arm):
+        tot_n = len(self.rewards_per_arm[idx_arm])
+        N = min(self.compute_current_N(), tot_n)
+        windowed_rewards = self.rewards_per_arm[idx_arm][-N:]
+        self.average_rewards[idx_arm] = np.mean(windowed_rewards)
+        self.std_reward[idx_arm] = np.std(windowed_rewards)
 
     '''
     Returns mean given arm
     '''
-
     def get_arm_mean(self, arm):
         return self.average_rewards[arm]
