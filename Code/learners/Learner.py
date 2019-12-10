@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import pathlib
 
 import seaborn as sns
+import scipy
 
 sns.set(font_scale=2.5)
 sns.set(rc={'figure.figsize':(15,9), 'axes.formatter.limits': (-5, 5), 'axes.titlesize': 'medium', 'xtick.labelsize': 'x-large', 'ytick.labelsize': 'x-large'})
@@ -17,7 +18,7 @@ env_dir = ProjectEnvironment.get_env_dir()
 
 class Learner:
 
-    def __init__(self, arms, n_users=3, window=None, idx_c=-1, idx_s=-1, name_learner=None, sigma=None):
+    def __init__(self, arms, n_users=3, window=None, idx_c=-1, idx_s=-1, name_learner=None, sigma=None, batch_size = None):
         if name_learner is None:
             raise ValueError("Pls name me")
         self.sigma = sigma
@@ -26,71 +27,82 @@ class Learner:
         self.n_arms = len(arms)
         self.arms = arms
         self.t = 0
+        self.batch_size = batch_size
         self.rewards_per_arm = [[] for i in range(self.n_arms)]
         self.collected_rewards = np.array([])
-        self.drawn_user = np.array([])
+        self.drawn_user_to_print = np.array([])
+        self.drawn_users_per_t = np.array([])
         self.user_samples = [0 for _ in range(n_users)]  # number of samples drawn for each user
         self.idx_c = idx_c
         self.idx_s = idx_s
         self.samples_user = [([], []) for _ in range(n_users)]  # values of the samples drawn for each user
+        self.history_drawn_users = np.array([])
 
-    def update_observations(self, pulled_arm, reward, demand, user):
+    def update_observations(self, pulled_arm, reward, demand, users):
         self.rewards_per_arm[pulled_arm].append(reward)
-        self.user_samples[user] += 1
+        # TODO non va bene prendere drawn users, bisogna prenderne la window. Problema: non so a quale t sono associati
+        for user in users:
+            self.user_samples[user] += 1
+            self.drawn_user_to_print = np.append(self.drawn_user_to_print, user)
+        self.drawn_users_per_t = np.append(self.drawn_users_per_t, len(users))
         self.collected_rewards = np.append(self.collected_rewards, reward)
-        self.drawn_user = np.append(self.drawn_user, user)
+
+        # history drawn users
+        try:
+            self.history_drawn_users[self.t - 1] += 1
+        except:
+            self.history_drawn_users = np.append(self.history_drawn_users, 1)
         self.samples_user[user][0].append(pulled_arm)
         self.samples_user[user][1].append(demand)
-
-    def get_collected_rewards_user(self, user):
-        indices = [i for i, u in enumerate(self.drawn_user) if u == user]
-        return self.collected_rewards[indices]
 
     def num_samples(self, arm):
         return len(self.rewards_per_arm[arm])
 
-    def avg_bounds_fixed(self, alpha):
-        tot_N = np.sum(self.user_samples)
-        if self.window is None or self.window > tot_N:
-            N = tot_N
+    def compute_current_N(self):
+        if self.window is None or self.window > self.t:
+            n = self.t
         else:
-            N = self.window
-        idxs = list(range(tot_N - N, tot_N))
-        drawn_user, collected_rewards = self.drawn_user[idxs], self.collected_rewards[idxs]
-        rewards_user = [r for u, r in zip(drawn_user, collected_rewards)]
-        mu, std = np.mean(rewards_user), np.std(rewards_user)
-        delta = self.bounds(std, N, alpha)
+            n = self.window
+
+        return n
+
+    def avg_bounds_fixed(self, alpha):
+        t_ = self.t
+        if self.window is not None:
+            t_ = self.window
+
+        collected_rewards = self.collected_rewards[-t_:]
+        mu, std = np.mean(collected_rewards), np.std(collected_rewards)
+        delta = self.bounds(std, len(collected_rewards), alpha)
         return mu - delta, mu + delta
 
     @staticmethod
     def bounds(std, N, alpha):
-        return np.quantile(np.random.standard_t(N - 1), 1 - alpha / 2) * std / np.power(N, 0.5)
+        value_ppf = (1 + (1 - alpha)) / 2 # 1-alpha/2
+        scipy_quantile = scipy.stats.t.ppf([value_ppf], N-1)[0]
+        return scipy_quantile * std / np.power(N, 0.5)
 
-    # Computed with approach explained here: http://math.mit.edu/~goemans/18310S15/chernoff-notes.pdf
-    # i.e., Chernoff bound for bernoulli distribution
-    def prob_lower_bound(self, users, alpha):
-        tot_N = np.sum([self.user_samples[user] for user in users])  # / tot_num_samples
-        if self.window is None or self.window > tot_N:
-            N = tot_N
-        else:
-            N = self.window
-        idxs = list(range(tot_N - N, N))
-        user_samples = self.user_samples[idxs]
-        tot_num_samples = np.sum(user_samples)
-        num_user = np.sum([self.user_samples[user] for user in users])  # / tot_num_samples
-        delta = np.power(np.log10(1 / alpha) * 2 / num_user, 0.5)
-        return ((1 - delta) * num_user) / tot_num_samples
+    def prob_lower_bound_fixed(self, alpha, batch_size):
+        # last M values from self.drawn_user, being M the sum of the last N history_... taken from the batch
+        t_ = self.t
+        if self.window is not None:
+            t_ = self.window
+        num_users = np.sum(self.drawn_users_per_t[-t_:])
+        delta = np.power(np.log10(1 / alpha) * 2 / num_users, 0.5)
+        lower_bound_num_users = (1 - delta) * num_users
+        lower_bound_prob = lower_bound_num_users / (t_ * batch_size)
+        return lower_bound_prob
 
-    def prob_lower_bound_fixed(self, alpha):
-        num_user = np.sum(self.user_samples)  # / tot_num_samples
-        delta = np.power(np.log10(1 / alpha) * 2 / num_user, 0.5)
-        return (1 - delta) * num_user
-
-    def pull_arm(self, rewards_per_arm, demands_per_arm, user, t, idx_arm):
+    def pull_arm(self, rewards_per_arm, demands_per_arm, user, t):
         self.t = t
-        reward, demand = rewards_per_arm[idx_arm], demands_per_arm[idx_arm]
-        self.update(idx_arm, reward, demand, user)
+        idx_arm = self.best_arm()
+        reward, demand = np.mean(rewards_per_arm[:, idx_arm]), np.mean(demands_per_arm[:, idx_arm])
+        self.update_observations(idx_arm, reward, demand, user)
+        self.update(idx_arm)
         return idx_arm
+
+    def best_arm(self):
+        pass
 
     @staticmethod
     def plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, name_learner, sigma,
@@ -139,17 +151,12 @@ class Learner:
         real_rewards = env.real_rewards
         # print(len(regret_history), len(cumulative_regret_history), len(real_rewards))
         x = list(range(len(real_rewards)))
-
-<<<<<<< HEAD:Code/learners/Learner.py
+        """
         Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner,
                                    self.sigma, curr_dir_env)
+        """
         Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner,
                                    self.sigma, curr_dir_env, also_cumulative=True)
-
-=======
-        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env)
-        Learner.plot_regret_reward(x, real_rewards, regret_history, cumulative_regret_history, self.name_learner, self.sigma, curr_dir_env, also_cumulative = True)
->>>>>>> dev:Code/Part_1/Learner.py
         # print functions
         demand_mapping = []
         for user, (x, y) in enumerate(self.samples_user):
@@ -187,10 +194,10 @@ class Learner:
 
             plt.savefig("{}demand_{}.png".format(curr_dir_env, user))
         """
-        return x, real_rewards, regret_history, cumulative_regret_history, (self.idx_c, self.idx_s, demand_mapping)
+        return x, real_rewards, regret_history, cumulative_regret_history, (self.idx_c, self.idx_s, demand_mapping), self.drawn_user_to_print
 
     @abstractmethod
-    def update(self, pulled_arm, reward, demand, user):
+    def update(self, idx_arm):
         pass
 
     @abstractmethod
