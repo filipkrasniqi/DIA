@@ -280,7 +280,7 @@ class ProjectEnvironment(Environment):
             for u in users:
                 u.plot(T)
 
-    def plot_context(self, idx_context, T, t_vals = [80, 171, 262, 353], real_demand = True):# [0, 40, 80, 91, 131, 171, 182, 222, 262, 273, 313, 353], real_demand = True):
+    def plot_context(self, idx_context, T, t_vals = [80], real_demand = True):# [0, 40, 80, 91, 131, 171, 182, 222, 262, 273, 313, 353], real_demand = True):
         attempts_number = 16
         list_attempts = list(range(attempts_number))
         resolution = 64
@@ -291,6 +291,9 @@ class ProjectEnvironment(Environment):
         for idx_t, t in enumerate(t_vals):
             for idx_arm, arm in enumerate(arms_in_plots):
                 demands_arm = []
+                subcontexts_current_context = self.contexts[idx_context]
+                demands_subcontext = [[] for _ in subcontexts_current_context]
+                numbers_subcontext = [0 for _ in subcontexts_current_context]
                 for _ in list_attempts:
                     sub_context, user = self.sample_subcontext(t, idx_context)
                     sub_contexts_to_return[idx_arm].append(sub_context)
@@ -298,11 +301,15 @@ class ProjectEnvironment(Environment):
                     t_df_total.append(t % self.season_length)
                     season_df_total.append(self.season(t))
                     if real_demand:
-                        demand = self.contexts[idx_context][sub_context].aggregate_demand(arm, t)
+                        demand = subcontexts_current_context[sub_context].aggregate_demand(arm, t)
                     else:
-                        demand = self.contexts[idx_context][sub_context].aggregate_noised_demand(arm, t, user)
+                        demand = subcontexts_current_context[sub_context].aggregate_noised_demand(arm, t, user)
                     demands_arm.append(demand)
-                avg_demand = np.mean(demands_arm)
+                    demands_subcontext[sub_context].append(demand)
+                    numbers_subcontext[sub_context] += 1
+                avg_demand = 0
+                for d_s, n_s in zip(demands_subcontext, numbers_subcontext):
+                    avg_demand += np.mean(d_s) * (n_s / np.sum(numbers_subcontext))
                 demands.append(avg_demand)
                 rewards.append(avg_demand * arm)
                 t_df.append(t % self.season_length)
@@ -320,19 +327,19 @@ class ProjectEnvironment(Environment):
 
         # for t in range(T):
         # current_df = df.where(df["Time"] == t).dropna()
-
+        """
         g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
         g = g.map(sns.lineplot, "Price", "Demand").add_legend()
         # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
         # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.show()
-
+        """
         g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
         g = g.map(sns.lineplot, "Price", "Reward").add_legend()
         # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
         # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.show()
-
+        """
         users_seasons_times = zip(users_to_return, season_df_total, t_df_total)
         users_seasons_times = sorted(users_seasons_times)
         users_to_return, season_df_total, t_df_total = [u for u, s, t in users_seasons_times], [s for u, s, t in users_seasons_times], [t for u, s, t in users_seasons_times]
@@ -355,6 +362,88 @@ class ProjectEnvironment(Environment):
         # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
         # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.show()
+        """
+
+    def plot_contexts(self):
+        attempts_number = 32
+        list_attempts = list(range(attempts_number))
+        resolution = 64
+        arms_in_plots = self.arms# np.linspace(0, max(self.arms), resolution)
+        demands, rewards, sub_contexts_to_return, users_to_return = [], [], [[] for _ in arms_in_plots], []
+        t_df, season_df, t_df_total, season_df_total, arms_to_plot, idx_context_df = [], [], [], [], [], []
+        t = 1
+        for idx_context, subcontexts_current_context in enumerate(self.contexts):
+            for idx_arm, arm in enumerate(arms_in_plots):
+                demands_arm = []
+                demands_subcontext = [[] for _ in subcontexts_current_context]
+                numbers_subcontext = [0 for _ in subcontexts_current_context]
+                for _ in list_attempts:
+                    sub_context, user = self.sample_subcontext(t, idx_context)
+                    sub_contexts_to_return[idx_arm].append(sub_context)
+                    users_to_return.append("Class {}".format(user))
+                    t_df_total.append(t % self.season_length)
+                    season_df_total.append(self.season(t))
+                    demand = subcontexts_current_context[sub_context].aggregate_demand(arm, t)
+                    demands_arm.append(demand)
+                    demands_subcontext[sub_context].append(demand)
+                    numbers_subcontext[sub_context] += 1
+                avg_demand = 0
+                for d_s, n_s in zip(demands_subcontext, numbers_subcontext):
+                    avg_demand += np.mean(d_s) * (n_s / np.sum(numbers_subcontext))
+                demands.append(avg_demand)
+                rewards.append(avg_demand * arm)
+                t_df.append(t % self.season_length)
+                season_df.append(self.season(t))
+                idx_context_df.append(idx_context)
+                arms_to_plot.append(arm)
+
+        df = pd.DataFrame(columns=["Demand", "Reward", "Time", "Season", "Price", "idx_context"],
+                          data={"Demand": demands, "Reward": rewards, "Season": season_df, "Time": t_df,
+                                "Price": arms_to_plot, "idx_context": idx_context_df})
+        colors_palette = [User.hue_map((idx_context + 1) / 9) for idx_context, _ in enumerate(self.contexts)]
+        palette = {
+            idx_context: colors_palette[idx_context] for idx_context, _ in enumerate(self.contexts)
+        }
+        # demands = np.array(demands).reshape(len(seasons), -1)
+
+        # for t in range(T):
+        # current_df = df.where(df["Time"] == t).dropna()
+        """
+        g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
+        g = g.map(sns.lineplot, "Price", "Demand").add_legend()
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.show()
+        """
+        g = sns.FacetGrid(df, size=10, col="Season", hue="idx_context", palette=palette, legend_out=True)
+        g = g.map(sns.lineplot, "Price", "Reward").add_legend()
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.show()
+        """
+        users_seasons_times = zip(users_to_return, season_df_total, t_df_total)
+        users_seasons_times = sorted(users_seasons_times)
+        users_to_return, season_df_total, t_df_total = [u for u, s, t in users_seasons_times], [s for u, s, t in users_seasons_times], [t for u, s, t in users_seasons_times]
+        df = pd.DataFrame(columns=["Time", "Season", "Class"],
+                          data={"Season": season_df_total, "Time": t_df_total,
+                                "Class": users_to_return})
+        colors_palette = [User.hue_map(t / T) for t in df.Time.unique()]
+        palette = {
+            t: colors_palette[i] for i, t in enumerate(df.Time.unique())
+        }
+        # demands = np.array(demands).reshape(len(seasons), -1)
+
+        # for t in range(T):
+        # current_df = df.where(df["Time"] == t).dropna()
+        g = sns.FacetGrid(df, size=10, row="Season", col="Time", legend_out=True)
+        g = g.map(sns.countplot, "Class")
+        # for t in t_vals:
+            # current_df = df.where(df["Time"] == t).dropna()
+            # sns.countplot(data=current_df, x="Class")
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.show()
+        """
 
     def plot_single_users(self, real_demand = True, T = 363, t_vals = [1], idx_context = 4):# , 91, 181, 271]):
         attempts_number = 1
@@ -400,6 +489,7 @@ class ProjectEnvironment(Environment):
                 plt.title("Demand of user {}".format(user))
                 plt.show()
                 """
+
                 g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
                 g = g.map(sns.lineplot, "Price", "Rewards").add_legend()
                 plt.title("Reward of user {}, time {}, season {}, context {}".format(user,t,season, idx_context))

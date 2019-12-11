@@ -22,7 +22,7 @@ season_length = 91
 number_of_seasons = 4
 T = 363
 context_change_period = 14
-batch_size = 128
+batch_size = 192
 
 def identity(t, price):
     return 1
@@ -41,32 +41,32 @@ def gauss(coeff, sigma, t, mu, price):
     return ret_val
 
 coeff_user_season = [
-    [0.75, -1, 0.5, 0.1],
-    [0.3, -1, 0.3, 0.1],
-    [0.5, -1,  0.75, 0.1]
+    [0.001, -1, 0.5, 0.1],
+    [0.001, -1, 0.3, 0.1],
+    [0.001, -1,  0.75, 0.1]
 ]
 q_user_season = [
-    [90, 180, 20, 300],
-    [10, 180, 10, 150],
-    [10, 180, 45, 50]
+    [5, 180, 20, 300],
+    [30, 180, 10, 150],
+    [65, 180, 45, 50]
 ]
 
 matrix_parameters_u1 = [
-    [0.03, 3000, [], functools.partial(gauss, 175, 5)],
+    [0.097, 1000, [], functools.partial(gauss, 175, 5)],
     [0.0025, 20, [], functools.partial(gauss, 175, 5)],
     [0.005, 25, [], functools.partial(gauss, 175, 5)],
     [0.009, 15, [], functools.partial(gauss, 175, 5)],
         ]
 
 matrix_parameters_u2 = [
-    [0.001, 100, [], functools.partial(gauss, 175, 5)],
+    [0.10837, 20, [], functools.partial(gauss, 175, 5)],
     [0.003, 20, [], functools.partial(gauss, 175, 5)],
     [0.002, 15, [], functools.partial(gauss, 175, 5)],
     [0.004, 20, [], functools.partial(gauss, 175, 5)],
         ]
 
 matrix_parameters_u3 = [
-    [0.003, 250, [], functools.partial(gauss, 175, 5)],
+    [0.00036, 20, [], functools.partial(gauss, 175, 5)],
     [0.009, 25, [], functools.partial(gauss, 175, 5)],
     [0.004, 10, [], functools.partial(gauss, 175, 5)],
     [0.007, 15, [], functools.partial(gauss, 175, 5)],
@@ -81,7 +81,7 @@ users_matrix_parameters = [
 ]
 
 min_price = 25
-max_price = 750
+max_price = 1000
 n_arms = math.ceil(math.pow(T * math.log(T, 10), 0.25))
 arms = np.linspace(min_price, max_price, num=n_arms)
 
@@ -103,8 +103,8 @@ window_length = int(coeff_window_length * math.pow(T, 0.5))
 do_UCB_wdw = False
 do_TS_wdw = True
 plot_env = False
-plot_single_user = True
-plot_context = False
+plot_single_user = False
+plot_context = True
 
 def num_users(idx, t):
     t_in_season, season = (t % season_length) + 1, int((t % 365) / season_length)
@@ -134,8 +134,14 @@ def train_context(learner_constructor, context_alternatives, window_length=None)
             env.plot_single_users(True, T, idx_context=4)
             err
         if plot_context:
+            """
             env.plot_context(0, T)
-            err
+            env.plot_context(1, T)
+            env.plot_context(2, T)
+            env.plot_context(3, T)
+            env.plot_context(4, T)
+            """
+            env.plot_contexts()
         for t in range(1, T+1):
             # take set of rewards for each context. This allows to call round_context only once.
             # From round_context, rewards and demands are returned for each context, and are the set of rewards and demands
@@ -145,7 +151,7 @@ def train_context(learner_constructor, context_alternatives, window_length=None)
             rewards_per_arm, demands_per_arm, subcontexts, users = env.round_context(t)
             for idx_c, (c_learner, rewards, subcontext, demands) in enumerate(zip(c_learners, rewards_per_arm, subcontexts, demands_per_arm)):
                 rewards, demands = np.array(rewards).reshape(batch_size, -1), np.array(demands).reshape(batch_size, -1)
-                idxs_arm_c_learner, real_reward = c_learner.pull_arm(t, rewards, demands, np.array(users))
+                idxs_arm_c_learner, _ = c_learner.pull_arm(t, rewards, demands, np.array(users))
                 if idx_c == best_context:
                     pulled_arms_current_best_context = idxs_arm_c_learner
             # once all learners are updated, we update rewards for the current context
