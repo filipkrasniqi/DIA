@@ -20,8 +20,8 @@ sigma_env_n = [0.1]#, 2, 3]
 
 season_length = 91
 number_of_seasons = 4
-T = 363
-context_change_period = 14
+horizon = 363
+context_change_period = 7
 batch_size = 192
 
 def identity(t, price):
@@ -41,35 +41,35 @@ def gauss(coeff, sigma, t, mu, price):
     return ret_val
 
 coeff_user_season = [
-    [0.001, -1, 0.5, 0.1],
-    [0.001, -1, 0.3, 0.1],
-    [0.001, -1,  0.75, 0.1]
+    [0.1, -0.1, 0.1, -0.1],
+    [0.1, 0.1, 0.1, -0.1],
+    [0.1, 0.1,  -0.1, -0.1]
 ]
 q_user_season = [
-    [5, 180, 20, 300],
-    [30, 180, 10, 150],
-    [65, 180, 45, 50]
+    [45, 75, 50, 45],
+    [45, 50, 30, 45],
+    [45, 25, 80, 45]
 ]
 
 matrix_parameters_u1 = [
-    [0.097, 1000, [], functools.partial(gauss, 175, 5)],
-    [0.0025, 20, [], functools.partial(gauss, 175, 5)],
-    [0.005, 25, [], functools.partial(gauss, 175, 5)],
-    [0.009, 15, [], functools.partial(gauss, 175, 5)],
+    [0.002, 15, [], functools.partial(gauss, 175, 5)],
+    [0.009, 80, [], functools.partial(gauss, 175, 5)],
+    [0.009, 80, [], functools.partial(gauss, 175, 5)],
+    [0.003, 20, [], functools.partial(gauss, 175, 5)],
         ]
 
 matrix_parameters_u2 = [
-    [0.10837, 20, [], functools.partial(gauss, 175, 5)],
+    [0.009, 80, [], functools.partial(gauss, 175, 5)],
     [0.003, 20, [], functools.partial(gauss, 175, 5)],
     [0.002, 15, [], functools.partial(gauss, 175, 5)],
-    [0.004, 20, [], functools.partial(gauss, 175, 5)],
+    [0.003, 20, [], functools.partial(gauss, 175, 5)],
         ]
 
 matrix_parameters_u3 = [
-    [0.00036, 20, [], functools.partial(gauss, 175, 5)],
-    [0.009, 25, [], functools.partial(gauss, 175, 5)],
-    [0.004, 10, [], functools.partial(gauss, 175, 5)],
-    [0.007, 15, [], functools.partial(gauss, 175, 5)],
+    [0.003, 20, [], functools.partial(gauss, 175, 5)],
+    [0.003, 20, [], functools.partial(gauss, 175, 5)],
+    [0.002, 15, [], functools.partial(gauss, 175, 5)],
+    [0.003, 20, [], functools.partial(gauss, 175, 5)],
 ]
 
 context_alternatives = [[[0, 1, 2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], [0]], [[0], [1], [2]]]
@@ -81,8 +81,8 @@ users_matrix_parameters = [
 ]
 
 min_price = 25
-max_price = 1000
-n_arms = math.ceil(math.pow(T * math.log(T, 10), 0.25))
+max_price = 750
+n_arms = math.ceil(math.pow(horizon * math.log(horizon, 10), 0.25))
 arms = np.linspace(min_price, max_price, num=n_arms)
 
 min_confidence = 0.95  # this is 1-alpha
@@ -90,7 +90,7 @@ alpha = 1 - min_confidence
 beta = 0.05
 delta = 0.001
 portion_samples_ab_testing = 0.4
-test_T = int(portion_samples_ab_testing * T)
+test_T = int(portion_samples_ab_testing * horizon)
 
 norm_dist = stats.norm(0, 1)
 z_a, z_b = norm_dist.pdf(1 - alpha), norm_dist.pdf(beta)
@@ -98,13 +98,13 @@ do_sequential_AB = False
 do_UCB = False
 do_TS = False
 
-coeff_window_length = 2
-window_length = int(coeff_window_length * math.pow(T, 0.5))
+coeff_window_length = 1
+window_length = 13# int(coeff_window_length * math.pow(horizon, 0.5)) + 10
 do_UCB_wdw = False
 do_TS_wdw = True
 plot_env = False
-plot_single_user = False
-plot_context = True
+plot_single_user = True
+plot_context = False
 
 def num_users(idx, t):
     t_in_season, season = (t % season_length) + 1, int((t % 365) / season_length)
@@ -124,38 +124,24 @@ def train_context(learner_constructor, context_alternatives, window_length=None)
         history_best_contexts = [best_context]
         history_results_each_contexts = [[] for _ in context_alternatives] # for each context saving sums
         env = ProjectEnvironment(arms, num_users_functions, sigma, users_matrix_parameters, context_alternatives, batch_size=batch_size)
-        if plot_env:
-            env.plot(T=T)
         if plot_single_user:
-            env.plot_single_users(True, T, idx_context=0)
-            env.plot_single_users(True, T, idx_context=1)
-            env.plot_single_users(True, T, idx_context=2)
-            env.plot_single_users(True, T, idx_context=3)
-            env.plot_single_users(True, T, idx_context=4)
+            env.plot_single_users(True, horizon)
+            # env.plot_contexts()
+            env.plot_distribution()
             err
-        if plot_context:
-            """
-            env.plot_context(0, T)
-            env.plot_context(1, T)
-            env.plot_context(2, T)
-            env.plot_context(3, T)
-            env.plot_context(4, T)
-            """
-            env.plot_contexts()
-        for t in range(1, T+1):
+        for t in range(1, horizon + 1):
             # take set of rewards for each context. This allows to call round_context only once.
             # From round_context, rewards and demands are returned for each context, and are the set of rewards and demands
             # for each context and for each arm.
             # Users is instead the set drawn users. To simplify we return a matrix. For each context we have the same set of drawn.
             # Subcontexts is instead the associated set of subcontexts so to access the correct learner, as user u refers to different subcontexts
-            rewards_per_arm, demands_per_arm, subcontexts, users = env.round_context(t)
-            for idx_c, (c_learner, rewards, subcontext, demands) in enumerate(zip(c_learners, rewards_per_arm, subcontexts, demands_per_arm)):
-                rewards, demands = np.array(rewards).reshape(batch_size, -1), np.array(demands).reshape(batch_size, -1)
-                idxs_arm_c_learner, _ = c_learner.pull_arm(t, rewards, demands, np.array(users))
+            rewards_per_context_arm_subcontext, users = env.round_context(t)
+            for idx_c, (c_learner, rewards_per_arm_subcontext) in enumerate(zip(c_learners, rewards_per_context_arm_subcontext)):
+                idxs_arm_c_learner, _ = c_learner.pull_arm(t, rewards_per_arm_subcontext, users)
                 if idx_c == best_context:
                     pulled_arms_current_best_context = idxs_arm_c_learner
             # once all learners are updated, we update rewards for the current context
-            env.round_for_arm(pulled_arms_current_best_context, t, users)
+            env.round_for_arm(pulled_arms_current_best_context, t)
 
             if t % context_change_period == context_change_period - 1:
                 results_alternatives = []

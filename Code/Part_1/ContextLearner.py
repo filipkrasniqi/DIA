@@ -1,3 +1,4 @@
+import numpy as np
 """
 Class containing the definition of a context.
 For each subcontext (i.e., the set of users to which I associate a function to learn)
@@ -24,23 +25,26 @@ class ContextLearner:
     and the rewards for each arm would be different.
     Demands are useful only for plotting reasons (to show what has been estimated).
     """
-    def pull_arm(self, t, rewards_per_arm, demands_per_arm, users):
+    def pull_arm(self, t, rewards_per_arm_subcontext, users):
         idx_arms = []
-        real_reward = 0
+        total_reward = 0
         for idx_learner, subcontext in enumerate(self.subcontexts):
             # take rewards associated to this subcontext
-            idxs_reward_current_user = [idx for idx, u in enumerate(users) if u in subcontext]
-            rewards_per_arm_current_subcontext = rewards_per_arm[idxs_reward_current_user, :]
-            demands_per_arm_current_subcontext = demands_per_arm[idxs_reward_current_user, :]
-            users_current_subcontext = users[idxs_reward_current_user]
-            idx_arm = self.learners[idx_learner].pull_arm(rewards_per_arm_current_subcontext, demands_per_arm_current_subcontext, users_current_subcontext, t)
+            users_current_subcontext = [u for idx, u in enumerate(users) if u in subcontext]
+            rewards_per_subcontext_arm = np.transpose(rewards_per_arm_subcontext)
+            rewards_per_arm = rewards_per_subcontext_arm[idx_learner]
+            # rewards_per_arm = rewards_per_arm_subcontext
+            # rewards_per_arm_current_subcontext = rewards_per_arm[idxs_reward_current_user, :]
+            # users_current_subcontext = users[idxs_reward_current_user]
+            idx_arm = self.learners[idx_learner].pull_arm(rewards_per_arm, users_current_subcontext, t)
             idx_arms.append(idx_arm)
-            real_reward += rewards_per_arm_current_subcontext[idx_arm]
+            total_reward += rewards_per_arm[idx_arm]
         # TODO idx_arms vanno tornati in ordine di sampling
-        return idx_arms, real_reward
+        return idx_arms, total_reward
 
     """
-    Plots learners of the ContextLearner (one for each subcontext)
+    Plots results of the learning given the environment.
+    No plot is referred to a single learner, so I select the first
     """
     def plot(self, env):
         learners_plots = []

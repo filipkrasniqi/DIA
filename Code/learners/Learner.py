@@ -38,7 +38,7 @@ class Learner:
         self.samples_user = [([], []) for _ in range(n_users)]  # values of the samples drawn for each user
         self.history_drawn_users = np.array([])
 
-    def update_observations(self, pulled_arm, reward, demand, users):
+    def update_observations(self, pulled_arm, reward, users):
         self.rewards_per_arm[pulled_arm].append(reward)
         # TODO non va bene prendere drawn users, bisogna prenderne la window. Problema: non so a quale t sono associati
         for user in users:
@@ -53,6 +53,8 @@ class Learner:
         except:
             self.history_drawn_users = np.append(self.history_drawn_users, 1)
         self.samples_user[user][0].append(pulled_arm)
+        # TODO just for log purposes. Removed demand!
+        demand = 1
         self.samples_user[user][1].append(demand)
 
     def num_samples(self, arm):
@@ -93,11 +95,13 @@ class Learner:
         lower_bound_prob = lower_bound_num_users / (t_ * batch_size)
         return lower_bound_prob
 
-    def pull_arm(self, rewards_per_arm, demands_per_arm, user, t):
+    def pull_arm(self, rewards_per_arm, users, t):
         self.t = t
         idx_arm = self.best_arm()
-        reward, demand = np.mean(rewards_per_arm[:, idx_arm]), np.mean(demands_per_arm[:, idx_arm])
-        self.update_observations(idx_arm, reward, demand, user)
+        # reward = np.mean(rewards_per_arm[:, idx_arm])
+        reward = rewards_per_arm[idx_arm]
+        # TODO should avg the reward for the probability of the current subcontext to happen
+        self.update_observations(idx_arm, reward, users)
         self.update(idx_arm)
         return idx_arm
 

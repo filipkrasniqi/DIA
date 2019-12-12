@@ -9,12 +9,12 @@ import os
 
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
-env_dir = outputs_dir+"PROVA_CXG_v1/" # v01_without_context_T363
+env_dir = outputs_dir+"CXG_TS_v1/" # v01_without_context_T363
 
 import pandas as pd
 
 from Code.Part_1.Environment import Environment
-import itertools
+
 
 """
 Environment for online pricing.
@@ -63,7 +63,6 @@ class ProjectEnvironment(Environment):
         self.drawn_users = []
         self.selected_context = 0
         self.contexts_alternatives = context_alternatives
-        self.all_rewards = []  # list of arrays. Each array contains <#arms> values
 
     @staticmethod
     def get_env_dir():
@@ -108,27 +107,36 @@ class ProjectEnvironment(Environment):
     Assumption: these samples are available
     """
     def round_context(self, t):
-        rewards, demands, sub_contexts_to_return, users_to_return = [[] for _ in self.contexts], [[] for _ in self.contexts], [[] for _ in self.contexts], []
-        list_attempts = list(range(self.batch_size))
+        rewards, rewards_context_arm, users = [[] for _ in self.contexts], [[] for _ in self.contexts], []
+        batch = range(self.batch_size)
         # sample users <batch_size> times
-        for _ in list_attempts:
+        current_probabilities = self.probabilities(t)
+        for _ in batch:
             user = self.sample_user(t)
-            users_to_return.append(user)
-            # for every sampled user, get the curve for each context
-            for idx_c, context in enumerate(self.contexts):
-                sub_contexts_alternatives_for_current_context = self.contexts_alternatives[idx_c]
-                sub_context = self.get_subcontext_from_user(sub_contexts_alternatives_for_current_context, user)
-                sub_contexts_to_return[idx_c].append(sub_context)
-                for arm in self.arms:
-                    # aggregate demand curve is already inside the context
-                    demand = context[sub_context].update_samples(arm, t)
-                    demands[idx_c].append(demand)
-                    rewards[idx_c].append(demand * arm)  # demand
+            users.append(user)
 
-        for samples_context in rewards:
-            for sample in samples_context:
-                self.all_rewards.append(sample)
-        return rewards, demands, sub_contexts_to_return, users_to_return
+        users = np.array(users)
+
+        for idx_c, sub_contexts in enumerate(self.contexts_alternatives):
+            for _ in self.arms:
+                rewards[idx_c].append([])
+                rewards_context_arm[idx_c].append([])
+
+        # for each context
+        for idx_c, context in enumerate(self.contexts):
+            sub_contexts_alternatives_for_current_context = self.contexts_alternatives[idx_c]
+            # for each arm
+            for idx_arm, arm in enumerate(self.arms):
+                # retrieve batch of demands corresponding to each sub context
+                demands = [[] for _ in sub_contexts_alternatives_for_current_context]
+                for user in users:
+                    sub_context = self.get_subcontext_from_user(sub_contexts_alternatives_for_current_context, user)
+                    demands[sub_context].append(context[sub_context].weighted_update_samples(arm, current_probabilities, t))
+                # update reward for each sub_context by averaging those available
+                for sub_context, users_in_sub_context in enumerate(sub_contexts_alternatives_for_current_context):
+                    rewards[idx_c][idx_arm].append(np.mean(demands[sub_context]) * arm)  # demand
+
+        return rewards, users
 
     """
     Given a single arm, it pulls more arms with associated users.
@@ -138,9 +146,8 @@ class ProjectEnvironment(Environment):
     def round_for_arm_old(self, idx_pulled_arms, t, drawn_users):
         sub_contexts_for_current_context = self.contexts[self.selected_context]
         sub_contexts_alternatives_for_current_context = self.contexts_alternatives[self.selected_context]
-        best_reward, real_reward = 0, 0
-        for idx_s, subcontext in enumerate(sub_contexts_alternatives_for_current_context):
-            idx_pulled_arm = idx_pulled_arms[idx_s]
+        best_reward_tot, real_reward_tot = 0, 0
+        for idx_s, (subcontext, idx_pulled_arm) in enumerate(zip(sub_contexts_alternatives_for_current_context, idx_pulled_arms)):
             price = self.arms[idx_pulled_arm]
             # take rewards associated to this subcontext
             idxs_reward_current_user = [idx for idx, u in enumerate(drawn_users) if u in subcontext]
@@ -151,70 +158,37 @@ class ProjectEnvironment(Environment):
                 current_best_reward, current_best_price = sub_contexts_for_current_context[idx_s].optimum_aggregate(t)
                 best_rewards_batch.append(current_best_reward)
 
-                real_sample = sub_contexts_for_current_context[idx_s].aggregate_demand(price, t)
+                real_sample = sub_contexts_for_current_context[idx_s].weighted_aggregate_demand(price, self.probabilities(t), t)
                 current_real_reward = real_sample * price
                 real_rewards_batch.append(current_real_reward)
                 best_price_batch.append(self.arms[current_best_price])
                 real_price_batch.append(price)
-            best_reward += np.mean(best_rewards_batch)
-            real_reward += np.mean(real_rewards_batch)
-            """
-            season = self.season(t)
-            if season == 0:
-                print()
-            elif season == 1:
-                print()
-            elif season == 2:
-                print()
-            else:
-                print()
-            
-        for idx, (idx_arm, idx_user, reward) in enumerate(zip(idx_pulled_arms, drawn_users, rewards)):
-            sub_contexts_for_current_context = self.contexts[self.selected_context]
-            sub_contexts_alternatives_for_current_context = self.contexts_alternatives[self.selected_context]
-            subcontext = self.get_subcontext_from_user(sub_contexts_alternatives_for_current_context, idx_user)
+            best_reward_tot += np.mean(best_rewards_batch)
+            real_reward_tot += np.mean(real_rewards_batch)
 
-            price = self.arms[idx_arm]
-            real_sample = sub_contexts_for_current_context[subcontext].demand(price, t, idx_user)
-            real_reward = real_sample * price
-            best_reward, best_price = sub_contexts_for_current_context[subcontext].optimum(t, idx_user)
-            regret_t += best_reward - real_reward
-            real_reward_t += real_reward
-            batch_drawn_users.append(idx_user)
-        """
         self.drawn_users.append(drawn_users)
-        self.regret.append(best_reward - real_reward)
-        self.real_rewards.append(real_reward)
-        return real_reward
+        self.regret.append(best_reward_tot - real_reward_tot)
+        self.real_rewards.append(real_reward_tot)
+        return real_reward_tot
 
-    def round_for_arm(self, idx_pulled_arms, t, drawn_users):
+    def round_for_arm(self, idx_pulled_arms, t):
         sub_contexts_for_current_context = self.contexts[self.selected_context]
         sub_contexts_alternatives_for_current_context = self.contexts_alternatives[self.selected_context]
-        best_reward, real_reward = 0, 0
-        for idx_s, subcontext in enumerate(sub_contexts_alternatives_for_current_context):
-            idx_pulled_arm = idx_pulled_arms[idx_s]
+        best_reward_tot, real_reward_tot = 0, 0
+        probabilities = self.probabilities(t)
+        for idx_s, (subcontext, idx_pulled_arm) in enumerate(zip(sub_contexts_alternatives_for_current_context, idx_pulled_arms)):
             price = self.arms[idx_pulled_arm]
-            # take rewards associated to this subcontext
-            idxs_reward_current_user = [idx for idx, u in enumerate(drawn_users) if u in subcontext]
-            best_rewards_batch, real_rewards_batch = [], []
-            best_price_batch, real_price_batch = [], []
-            for idx_drawn in idxs_reward_current_user:
-                idx_user = drawn_users[idx_drawn]
-                current_best_reward, current_best_price = sub_contexts_for_current_context[idx_s].optimum_aggregate(t)
-                best_rewards_batch.append(current_best_reward)
+            # takes reward associated to this subcontext for pulled arm
+            real_sample = sub_contexts_for_current_context[idx_s].weighted_aggregate_demand(price, probabilities, t)
+            current_real_reward = real_sample * price
+            # takes rewards associated to best pulled arm
+            current_best_reward, current_best_price = sub_contexts_for_current_context[idx_s].weighted_optimum_aggregate(t, probabilities)
+            best_reward_tot += current_best_reward
+            real_reward_tot += current_real_reward
 
-                real_sample = sub_contexts_for_current_context[idx_s].aggregate_demand(price, t)
-                current_real_reward = real_sample * price
-                real_rewards_batch.append(current_real_reward)
-                best_price_batch.append(self.arms[current_best_price])
-                real_price_batch.append(price)
-            best_reward += np.mean(best_rewards_batch)
-            real_reward += np.mean(real_rewards_batch)
-
-        self.drawn_users.append(drawn_users)
-        self.regret.append(best_reward - real_reward)
-        self.real_rewards.append(real_reward)
-        return real_reward
+        self.regret.append(best_reward_tot - real_reward_tot)
+        self.real_rewards.append(real_reward_tot)
+        return real_reward_tot
 
     """
     Return, given T, best rewards for each t
@@ -243,7 +217,7 @@ class ProjectEnvironment(Environment):
         probabilities = self.probabilities(t)
         user = np.random.choice(len(probabilities), 1, p=probabilities)[0]
         sub_context = self.get_subcontext_from_user(sub_contexts, user)
-        return sub_context, user
+        return sub_context, user, probabilities
     """
     Samples user regardless from the context
     """
@@ -280,89 +254,31 @@ class ProjectEnvironment(Environment):
             for u in users:
                 u.plot(T)
 
-    def plot_context(self, idx_context, T, t_vals = [80], real_demand = True):# [0, 40, 80, 91, 131, 171, 182, 222, 262, 273, 313, 353], real_demand = True):
-        attempts_number = 16
+    def plot_distribution(self, idx_context = 4, t_vals = [0, 40, 80, 91, 131, 171, 182, 222, 262, 273, 313, 353]):
+        attempts_number = 256
         list_attempts = list(range(attempts_number))
-        resolution = 64
-        arms_in_plots = self.arms# np.linspace(0, max(self.arms), resolution)
-        demands, rewards, sub_contexts_to_return, users_to_return = [], [], [[] for _ in arms_in_plots], []
-        t_df, season_df, t_df_total, season_df_total, arms_to_plot = [], [], [], [], []
+        users_to_return = []
+        t_df, season_df, t_df_total, season_df_total = [], [], [], []
 
         for idx_t, t in enumerate(t_vals):
-            for idx_arm, arm in enumerate(arms_in_plots):
-                demands_arm = []
-                subcontexts_current_context = self.contexts[idx_context]
-                demands_subcontext = [[] for _ in subcontexts_current_context]
-                numbers_subcontext = [0 for _ in subcontexts_current_context]
-                for _ in list_attempts:
-                    sub_context, user = self.sample_subcontext(t, idx_context)
-                    sub_contexts_to_return[idx_arm].append(sub_context)
-                    users_to_return.append("Class {}".format(user))
-                    t_df_total.append(t % self.season_length)
-                    season_df_total.append(self.season(t))
-                    if real_demand:
-                        demand = subcontexts_current_context[sub_context].aggregate_demand(arm, t)
-                    else:
-                        demand = subcontexts_current_context[sub_context].aggregate_noised_demand(arm, t, user)
-                    demands_arm.append(demand)
-                    demands_subcontext[sub_context].append(demand)
-                    numbers_subcontext[sub_context] += 1
-                avg_demand = 0
-                for d_s, n_s in zip(demands_subcontext, numbers_subcontext):
-                    avg_demand += np.mean(d_s) * (n_s / np.sum(numbers_subcontext))
-                demands.append(avg_demand)
-                rewards.append(avg_demand * arm)
-                t_df.append(t % self.season_length)
-                season_df.append(self.season(t))
-                arms_to_plot.append(arm)
+            for _ in list_attempts:
+                _, user, _ = self.sample_subcontext(t, idx_context)
+                users_to_return.append("Class {}".format(user))
+                t_df_total.append(t % self.season_length)
+                season_df_total.append(self.season(t))
+            t_df.append(t % self.season_length)
+            season_df.append(self.season(t))
 
-        df = pd.DataFrame(columns=["Demand", "Reward", "Time", "Season", "Price"],
-                          data={"Demand": demands, "Reward": rewards, "Season": season_df, "Time": t_df,
-                                "Price": arms_to_plot})
-        colors_palette = [User.hue_map(t / T) for t in df.Time.unique()]
-        palette = {
-            t: colors_palette[i] for i, t in enumerate(df.Time.unique())
-        }
-        # demands = np.array(demands).reshape(len(seasons), -1)
-
-        # for t in range(T):
-        # current_df = df.where(df["Time"] == t).dropna()
-        """
-        g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
-        g = g.map(sns.lineplot, "Price", "Demand").add_legend()
-        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
-        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.show()
-        """
-        g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
-        g = g.map(sns.lineplot, "Price", "Reward").add_legend()
-        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
-        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.show()
-        """
         users_seasons_times = zip(users_to_return, season_df_total, t_df_total)
         users_seasons_times = sorted(users_seasons_times)
         users_to_return, season_df_total, t_df_total = [u for u, s, t in users_seasons_times], [s for u, s, t in users_seasons_times], [t for u, s, t in users_seasons_times]
         df = pd.DataFrame(columns=["Time", "Season", "Class"],
                           data={"Season": season_df_total, "Time": t_df_total,
                                 "Class": users_to_return})
-        colors_palette = [User.hue_map(t / T) for t in df.Time.unique()]
-        palette = {
-            t: colors_palette[i] for i, t in enumerate(df.Time.unique())
-        }
-        # demands = np.array(demands).reshape(len(seasons), -1)
 
-        # for t in range(T):
-        # current_df = df.where(df["Time"] == t).dropna()
         g = sns.FacetGrid(df, size=10, row="Season", col="Time", legend_out=True)
         g = g.map(sns.countplot, "Class")
-        # for t in t_vals:
-            # current_df = df.where(df["Time"] == t).dropna()
-            # sns.countplot(data=current_df, x="Class")
-        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
-        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.show()
-        """
 
     def plot_contexts(self):
         attempts_number = 32
@@ -378,7 +294,7 @@ class ProjectEnvironment(Environment):
                 demands_subcontext = [[] for _ in subcontexts_current_context]
                 numbers_subcontext = [0 for _ in subcontexts_current_context]
                 for _ in list_attempts:
-                    sub_context, user = self.sample_subcontext(t, idx_context)
+                    sub_context, user, current_probabilities = self.sample_subcontext(t, idx_context)
                     sub_contexts_to_return[idx_arm].append(sub_context)
                     users_to_return.append("Class {}".format(user))
                     t_df_total.append(t % self.season_length)
@@ -420,7 +336,6 @@ class ProjectEnvironment(Environment):
         # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
         # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.show()
-        """
         users_seasons_times = zip(users_to_return, season_df_total, t_df_total)
         users_seasons_times = sorted(users_seasons_times)
         users_to_return, season_df_total, t_df_total = [u for u, s, t in users_seasons_times], [s for u, s, t in users_seasons_times], [t for u, s, t in users_seasons_times]
@@ -443,20 +358,19 @@ class ProjectEnvironment(Environment):
         # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
         # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.show()
-        """
 
-    def plot_single_users(self, real_demand = True, T = 363, t_vals = [1], idx_context = 4):# , 91, 181, 271]):
+    def plot_single_users(self, real_demand = True, T = 363, t_vals = [1, 101, 201, 301], idx_context = 4):# , 91, 181, 271]):
         attempts_number = 1
         list_attempts = list(range(attempts_number))
         resolution = len(self.arms)
         arms_in_plots = self.arms# np.linspace(0, max(self.arms), resolution)
-
+        df = pd.DataFrame()
         for idx_t, t in enumerate(t_vals):
             t_in_season = t % self.season_length
             season = self.season(t)
             for user in self.contexts_alternatives[idx_context]:
                 user = user[0]
-                demands, rewards = [], []
+                demands, rewards, users = [], [], []
                 t_df, season_df, t_df_total, season_df_total, arms_to_plot = [], [], [], [], []
                 for idx_arm, arm in enumerate(arms_in_plots):
                     if real_demand:
@@ -469,14 +383,13 @@ class ProjectEnvironment(Environment):
                     t_df.append(t % self.season_length)
                     season_df.append(season)
                     arms_to_plot.append(arm)
+                    users.append(user)
 
-                df = pd.DataFrame(
+                current_df = pd.DataFrame(
                                   data={"Demand": demands, "Rewards": rewards, "Season": season_df, "Time": t_df,
-                                        "Price": arms_to_plot})
-                colors_palette = [User.hue_map(t / T) for t in df.Time.unique()]
-                palette = {
-                    t: colors_palette[i] for i, t in enumerate(df.Time.unique())
-                }
+                                        "Price": arms_to_plot, "User": users})
+
+                df = pd.concat([df, current_df])
                 # demands = np.array(demands).reshape(len(seasons), -1)
 
                 # for t in range(T):
@@ -489,13 +402,16 @@ class ProjectEnvironment(Environment):
                 plt.title("Demand of user {}".format(user))
                 plt.show()
                 """
-
-                g = sns.FacetGrid(df, size=10, col="Season", hue="Time", palette=palette, legend_out=True)
-                g = g.map(sns.lineplot, "Price", "Rewards").add_legend()
-                plt.title("Reward of user {}, time {}, season {}, context {}".format(user,t,season, idx_context))
-                # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
-                # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-                plt.show()
+        colors_palette = [User.hue_map(t / T) for t in df.Time.unique()]
+        palette = {
+            t: colors_palette[i] for i, t in enumerate(df.Time.unique())
+        }
+        g = sns.FacetGrid(df, size=10, col="Season", hue="Time", row="User", palette=palette, legend_out=True)
+        g = g.map(sns.lineplot, "Price", "Rewards").add_legend()
+        plt.title("Reward of user {}, time {}, season {}, context {}".format(user,t,season, idx_context))
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.show()
 
 
 """
@@ -522,9 +438,17 @@ class User():
         self.samples.append(sample)
         return sample
 
+    def weighted_update_samples(self, price, probabilities, t):
+        sample = self.weighted_aggregate_noised_demand(price, probabilities, t)
+        self.samples.append(sample)
+        return sample
+
     #TODO inutile
     def aggregate_noised_demand(self, price, t):
         return max(0, self.aggregate_demand(price, t) + np.random.normal(0, self.sigma ** 2))
+
+    def weighted_aggregate_noised_demand(self, price, probabilities, t):
+        return max(0, self.weighted_aggregate_demand(price, probabilities, t) + np.random.normal(0, self.sigma ** 2))
 
     def noised_demand(self, price, t, user):
         return max(0, self.demand(price, t, user) + np.random.normal(0, self.sigma ** 2))
@@ -532,6 +456,21 @@ class User():
     # TODO devo farla? ragionare, in teoria si, e dopo chiamare questa. Il resto sembra corretto
     def aggregate_demand(self, price, t, season = None):
         return np.sum([self.demand(price, t, user, season) for user in self.users])
+
+    """
+    Weighted aggregate demand.
+    Here I am considering a sub context.
+    Reminder: a sub context is made of more users.
+    I have to weight the demand wrt the probability of the user inside the sub context.
+    probabilities: distribution of all users. I filter them with current_probabilities
+    The weight is probability / sum(current_probabilities)
+    """
+    def weighted_aggregate_demand(self, price, probabilities, t, season = None):
+        current_probabilities = [probabilities[user] for user in self.users]
+        tot_probabilities = np.sum(current_probabilities)
+        return np.sum([self.demand(price, t, user, season) * (probability / tot_probabilities) for user, probability in zip(self.users, current_probabilities)])
+        # return np.sum([self.demand(price, t, user, season) * probability for user, probability in
+        #                zip(self.users, current_probabilities)])
 
     def demand(self, price, t, user, season=None):
         # idx_user_in_subcontext identifies the idx of the user inside this subcontext
@@ -553,6 +492,10 @@ class User():
 
     def optimum_aggregate(self, t, season=None):
         all_rewards = [self.aggregate_demand(arm, t, season) * arm for arm in self.arms]
+        return np.max(all_rewards), np.argmax(all_rewards)
+
+    def weighted_optimum_aggregate(self, t, probabilities, season=None):
+        all_rewards = [self.weighted_aggregate_demand(arm, probabilities, t, season) * arm for arm in self.arms]
         return np.max(all_rewards), np.argmax(all_rewards)
 
     def season(self, t):

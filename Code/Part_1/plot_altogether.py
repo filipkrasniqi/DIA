@@ -14,7 +14,7 @@ from Code.Part_1.ProjectEnvironment import User, ProjectEnvironment
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
 output_plots_dir = "v1"
-env_dir = outputs_dir+"ts_wdw_v1/"
+env_dir = outputs_dir+"CXG_TS_v1/"
 output_dir = env_dir+"{}/".format(output_plots_dir)
 output_dir_with_context = env_dir+"{}_ctx/".format(output_plots_dir)
 pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -60,12 +60,6 @@ def plot(group_history, learner_name, sigma = None):
 n_users = 3
 single_context_alternatives = [[[0, 1, 2]]]
 batch_size = 16
-matrix_parameters_aggregate = [
-    [[0.01, 600, [20, 40, 60, 80], functools.partial(gauss, 175, 5)],
-     [0.03, 400, [20, 40, 60, 80], functools.partial(gauss, 160, 5)],
-     [0.03, 300, [20, 40, 60, 80], functools.partial(gauss, 150, 5)],
-     [0.02, 300, [20, 40, 60, 80], functools.partial(gauss, 140, 5)]]
-]
 T = 363
 min_price = 10
 max_price = 150
@@ -137,7 +131,7 @@ if plot_context:
     total_length = 0
     hue_val = 0
     colors_palette = {}
-    results = pickle.load(open("{}/results.pickle".format(env_dir), 'rb'))
+    results = pickle.load(open("{}/results_context.pickle".format(env_dir), 'rb'))
     sigmas = results["sigma"]
 
     for learner_name in [key for key in results.keys() if "sigma" not in key]:
