@@ -16,7 +16,7 @@ from Code.learners.UCB_Learner import UCB_Learner
 env_dir = ProjectEnvironment.get_env_dir()
 
 n_users = 3
-sigma_env_n = [0.1]#, 2, 3]
+sigma_env_n = [0.1, 2, 3]
 
 season_length = 91
 number_of_seasons = 4
@@ -52,24 +52,24 @@ q_user_season = [
 ]
 
 matrix_parameters_u1 = [
-    [0.002, 15, [], functools.partial(gauss, 175, 5)],
-    [0.009, 80, [], functools.partial(gauss, 175, 5)],
-    [0.009, 80, [], functools.partial(gauss, 175, 5)],
-    [0.003, 20, [], functools.partial(gauss, 175, 5)],
+    [0.002, 12, [], functools.partial(gauss, 175, 5)],
+    [0.0035, 18, [], functools.partial(gauss, 175, 5)],
+    [0.003, 16, [], functools.partial(gauss, 175, 5)],
+    [0.009, 50, [], functools.partial(gauss, 175, 5)],
         ]
 
 matrix_parameters_u2 = [
-    [0.009, 80, [], functools.partial(gauss, 175, 5)],
-    [0.003, 20, [], functools.partial(gauss, 175, 5)],
-    [0.002, 15, [], functools.partial(gauss, 175, 5)],
-    [0.003, 20, [], functools.partial(gauss, 175, 5)],
+    [0.009, 50, [], functools.partial(gauss, 175, 5)],
+    [0.0037, 20, [], functools.partial(gauss, 175, 5)],
+    [0.003, 16, [], functools.partial(gauss, 175, 5)],
+    [0.009, 50, [], functools.partial(gauss, 175, 5)],
         ]
 
 matrix_parameters_u3 = [
-    [0.003, 20, [], functools.partial(gauss, 175, 5)],
-    [0.003, 20, [], functools.partial(gauss, 175, 5)],
-    [0.002, 15, [], functools.partial(gauss, 175, 5)],
-    [0.003, 20, [], functools.partial(gauss, 175, 5)],
+    [0.003, 16, [], functools.partial(gauss, 175, 5)],
+    [0.002, 12, [], functools.partial(gauss, 175, 5)],
+    [0.003, 16, [], functools.partial(gauss, 175, 5)],
+    [0.003, 16, [], functools.partial(gauss, 175, 5)],
 ]
 
 context_alternatives = [[[0, 1, 2]], [[0, 1], [2]], [[0, 2], [1]], [[1, 2], [0]], [[0], [1], [2]]]
@@ -99,11 +99,11 @@ do_UCB = False
 do_TS = False
 
 coeff_window_length = 1
-window_length = 13# int(coeff_window_length * math.pow(horizon, 0.5)) + 10
+window_length = int(coeff_window_length * math.pow(horizon, 0.5)) + 10
 do_UCB_wdw = False
 do_TS_wdw = True
 plot_env = False
-plot_single_user = True
+plot_single_user = False
 plot_context = False
 
 def num_users(idx, t):
@@ -124,6 +124,7 @@ def train_context(learner_constructor, context_alternatives, window_length=None)
         history_best_contexts = [best_context]
         history_results_each_contexts = [[] for _ in context_alternatives] # for each context saving sums
         env = ProjectEnvironment(arms, num_users_functions, sigma, users_matrix_parameters, context_alternatives, batch_size=batch_size)
+        env_best_contexts = [env.get_current_best_context(1)]
         if plot_single_user:
             env.plot_single_users(True, horizon)
             # env.plot_contexts()
@@ -141,9 +142,10 @@ def train_context(learner_constructor, context_alternatives, window_length=None)
                 if idx_c == best_context:
                     pulled_arms_current_best_context = idxs_arm_c_learner
             # once all learners are updated, we update rewards for the current context
-            env.round_for_arm(pulled_arms_current_best_context, t)
+            check_context = t % context_change_period == context_change_period - 1
+            env.round_for_arm(pulled_arms_current_best_context, t, check_context)
 
-            if t % context_change_period == context_change_period - 1:
+            if check_context:
                 results_alternatives = []
                 for idx_c, context in enumerate(context_alternatives):
                     learners = c_learners[idx_c]
@@ -165,11 +167,13 @@ def train_context(learner_constructor, context_alternatives, window_length=None)
                 print("Season: {}, Time: {}, Best alternative: {}".format(int((t % 365) / season_length), (t+1) % season_length, best_context))
                 env.set_context(best_context)
                 history_best_contexts.append(best_context)
+                env_best_contexts.append(env.get_current_best_context(t))
                 # c_learners[best_context].plot(env)
         best_c_learner = c_learners[best_context]
         to_plot = {"results_c_learner": best_c_learner.plot(env)}
         to_plot["idx_c"] = best_context
-        to_plot["history_best_contexts"] = history_best_contexts
+        to_plot["history_best_contexts_selected"] = history_best_contexts
+        to_plot["history_best_contexts"] = env_best_contexts
         to_plot["history_results_each_contexts"] = history_results_each_contexts
         plots_for_sigma.append(to_plot)
     return plots_for_sigma

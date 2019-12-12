@@ -14,7 +14,7 @@ from Code.Part_1.ProjectEnvironment import User, ProjectEnvironment
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
 output_plots_dir = "v1"
-env_dir = outputs_dir+"CXG_TS_v1/"
+env_dir = outputs_dir+"CXG_UCB_v1/"
 output_dir = env_dir+"{}/".format(output_plots_dir)
 output_dir_with_context = env_dir+"{}_ctx/".format(output_plots_dir)
 pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
@@ -61,8 +61,8 @@ n_users = 3
 single_context_alternatives = [[[0, 1, 2]]]
 batch_size = 16
 T = 363
-min_price = 10
-max_price = 150
+min_price = 25
+max_price = 750
 n_arms = math.ceil(math.pow(T * math.log(T, 10), 0.25))
 arms = np.linspace(min_price, max_price, num=n_arms)
 num_users_functions = [functools.partial(num_users, i) for i in range(n_users)]
@@ -126,7 +126,7 @@ if plot_without_context:
                          "rewards", "Rewards", "Time [day]", "Value [$]")
         '''
 
-histories_best_contexts = {}
+histories_best_contexts, histories_best_contexts_selected_to_show = {}, {}
 if plot_context:
     total_length = 0
     hue_val = 0
@@ -150,13 +150,13 @@ if plot_context:
         cumulative_regrets_groupped, regrets_groupped, rewards_groupped = {}, {}, {}
         # plot cumulative regret
         for idx, (sigma, output_per_sigma) in enumerate(zip(sigmas, output_per_sigma)):
-            (results_c_learner, idx_c, history_best_contexts, history_results_each_context) = \
+            (results_c_learner, idx_c, history_best_contexts_selected, history_best_contexts, history_results_each_context) = \
                 output_per_sigma["results_c_learner"], output_per_sigma["idx_c"], output_per_sigma[
-                    "history_best_contexts"], output_per_sigma["history_results_each_contexts"]
+                    "history_best_contexts_selected"], output_per_sigma["history_best_contexts"], \
+                output_per_sigma["history_results_each_contexts"]
             if idx == 0:
                 # take only first to show how selection of contexts works
-                history_best_contexts_to_show, sigma_to_show = history_best_contexts, sigma
-                history_results_each_contexts_to_show = history_results_each_context
+                history_best_contexts_to_show, history_best_contexts_selected_to_show, sigma_to_show = history_best_contexts, history_best_contexts_selected, sigma
             for results_learner in results_c_learner:
                 (_, real_rewards, regret_history, cumulative_regret_history, _, _) = results_learner
                 print()
@@ -168,9 +168,9 @@ if plot_context:
             regrets_groupped[sigma] = regret_history
             rewards_groupped[sigma] = real_rewards
 
-        histories_best_contexts[learner_name+" - "+str(sigma_to_show)] = history_best_contexts_to_show
-
-
+        key = learner_name+" - "+str(sigma_to_show)
+        histories_best_contexts[key] = history_best_contexts_to_show
+        histories_best_contexts_selected_to_show[key] = history_best_contexts_selected_to_show
         plot_with_season(cumulative_regrets_groupped, learner_name, "cum_regret", "Cumulative regret", "Time [day]",
                          "Value [$]")
         plot_with_season(regrets_groupped, learner_name,
@@ -179,20 +179,30 @@ if plot_context:
                      "rewards", "Rewards", "Time [day]", "Value [$]")
 
 
-    weeks, learner_names, histories = np.array([]), np.array([]), np.array([])
+    weeks, learner_names, histories, histories_best = np.array([]), np.array([]), np.array([]), np.array([])
     for learner_name in histories_best_contexts.keys():
-        history = histories_best_contexts[learner_name]
+        history_best_tmp, history = histories_best_contexts[learner_name], histories_best_contexts_selected_to_show[learner_name]
         histories = np.append(histories, history)
+        histories_best = np.append(histories_best, [history_tmp[1] for history_tmp in history_best_tmp])
         learner_names = np.append(learner_names, np.repeat(learner_name, len(history)))
-        weeks = np.append(weeks, list(range(len(history))))
-    df_contexts = pandas.DataFrame(data={"Week": weeks, "Learner": learner_names, "Context": histories})
+        weeks_list = list(range(len(history)))
+        weeks = np.append(weeks, weeks_list)
+
+    list_if_selected = np.repeat("Selected", len(histories))
+    list_if_selected = np.append(list_if_selected, np.repeat("Best", len(histories_best)))
+    weeks = np.append(weeks, weeks_list)
+    learner_names = np.append(learner_names, np.repeat("Best", len(weeks_list)))
+
+    df_contexts = pandas.DataFrame(data={"Week": weeks, "Learner": learner_names, "Selected Context": np.append(histories, histories_best), "Selected/Best": list_if_selected})
     # ax, y_vals = plot(history, learner_name)
-    ax = sns.scatterplot(x="Week", y="Context", hue = "Learner", style="Learner", data=df_contexts, s=80)
+    ax = sns.scatterplot(x="Week", y="Selected Context", style="Selected/Best", data=df_contexts, s=80)
+    # ax = sns.scatterplot(x="Week", y="Best Context", style="Learner", data=df_contexts, s=80, color=".2", marker="+")
+    # g = sns.catplot(x="Week", y="pulse", hue="kind", data=exercise)
     ax.set_title("History selected contexts")
     ax.set_xlabel("Week")
     ax.set_ylabel("Context")
     plt.xlim(0, 52)
-    plt.ylim(0, 5)
+    plt.ylim(-0.5, 5)
 
     for s_idx in [13, 26, 39]:
         plt.axvline(s_idx, 0, 52, color="#FF0000A0", linestyle='dashed')

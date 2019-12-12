@@ -9,7 +9,7 @@ import os
 
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
-env_dir = outputs_dir+"CXG_TS_v1/" # v01_without_context_T363
+env_dir = outputs_dir+"CXG_TS_WDW_v1/" # v01_without_context_T363
 
 import pandas as pd
 
@@ -43,6 +43,7 @@ class ProjectEnvironment(Environment):
         self.season_length = season_length
         self.number_of_season = number_of_seasons
         self.num_users = num_users
+        self.best_contexts = []
         """
         List of contexts.
         A single context is a list of subcontexts.
@@ -171,25 +172,49 @@ class ProjectEnvironment(Environment):
         self.real_rewards.append(real_reward_tot)
         return real_reward_tot
 
-    def round_for_arm(self, idx_pulled_arms, t):
+    def round_for_arm(self, idx_pulled_arms, t, save_best_ctx):
+        probabilities = self.probabilities(t)
+        best_reward_tot, best_ctx = self.get_current_best_context(t)
         sub_contexts_for_current_context = self.contexts[self.selected_context]
         sub_contexts_alternatives_for_current_context = self.contexts_alternatives[self.selected_context]
-        best_reward_tot, real_reward_tot = 0, 0
-        probabilities = self.probabilities(t)
+        real_reward_tot = 0
+        if save_best_ctx:
+            self.best_contexts.append(best_ctx)
+
         for idx_s, (subcontext, idx_pulled_arm) in enumerate(zip(sub_contexts_alternatives_for_current_context, idx_pulled_arms)):
             price = self.arms[idx_pulled_arm]
+            users_current_subcontext = sub_contexts_alternatives_for_current_context[idx_s]
+            probability_current_subcontext = np.sum(
+                [p for u, p in enumerate(probabilities) if u in users_current_subcontext])
+
             # takes reward associated to this subcontext for pulled arm
             real_sample = sub_contexts_for_current_context[idx_s].weighted_aggregate_demand(price, probabilities, t)
             current_real_reward = real_sample * price
-            # takes rewards associated to best pulled arm
-            current_best_reward, current_best_price = sub_contexts_for_current_context[idx_s].weighted_optimum_aggregate(t, probabilities)
-            best_reward_tot += current_best_reward
-            real_reward_tot += current_real_reward
+            real_reward_tot += current_real_reward * probability_current_subcontext
 
         self.regret.append(best_reward_tot - real_reward_tot)
         self.real_rewards.append(real_reward_tot)
         return real_reward_tot
 
+    """
+    Computes best context and value
+    """
+    def get_current_best_context(self, t):
+        probabilities = self.probabilities(t)
+        best_rewards_for_context = []
+        for idx_c, context in enumerate(self.contexts):
+            sub_contexts_for_current_context = self.contexts[idx_c]
+            sub_contexts_alternatives_for_current_context = self.contexts_alternatives[idx_c]
+            best_reward_current_ctx = 0
+            for idx_s, subcontext in enumerate(sub_contexts_for_current_context):
+                users_current_subcontext = sub_contexts_alternatives_for_current_context[idx_s]
+                probability_current_subcontext = np.sum(
+                    [p for u, p in enumerate(probabilities) if u in users_current_subcontext])
+                reward, _ = subcontext.weighted_optimum_aggregate(t, probabilities)
+                best_reward_current_ctx += reward * probability_current_subcontext
+            best_rewards_for_context.append(best_reward_current_ctx)
+
+        return np.max(best_rewards_for_context), np.argmax(best_rewards_for_context)
     """
     Return, given T, best rewards for each t
     """
@@ -409,9 +434,11 @@ class ProjectEnvironment(Environment):
         g = sns.FacetGrid(df, size=10, col="Season", hue="Time", row="User", palette=palette, legend_out=True)
         g = g.map(sns.lineplot, "Price", "Rewards").add_legend()
         plt.title("Reward of user {}, time {}, season {}, context {}".format(user,t,season, idx_context))
-        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
-        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-        plt.show()
+        g = sns.FacetGrid(df, size=10, col="Season", hue="Time", row="User", palette=palette, legend_out=True)
+        g = g.map(sns.lineplot, "Price", "Demand").add_legend()
+        plt.title("Reward of user {}, time {}, season {}, context {}".format(user, t, season, idx_context))
+
+    plt.show()
 
 
 """
@@ -469,8 +496,6 @@ class User():
         current_probabilities = [probabilities[user] for user in self.users]
         tot_probabilities = np.sum(current_probabilities)
         return np.sum([self.demand(price, t, user, season) * (probability / tot_probabilities) for user, probability in zip(self.users, current_probabilities)])
-        # return np.sum([self.demand(price, t, user, season) * probability for user, probability in
-        #                zip(self.users, current_probabilities)])
 
     def demand(self, price, t, user, season=None):
         # idx_user_in_subcontext identifies the idx of the user inside this subcontext
