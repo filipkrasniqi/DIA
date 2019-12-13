@@ -4,11 +4,10 @@ n_inf = float("-inf")
 
 
 class SubcampaignDP:
-    def __init__(self, min_budget, max_budget, number_of_clicks, click_value):
+    def __init__(self, min_budget, max_budget, number_of_clicks):
         self.min_budget = min_budget
         self.max_budget = max_budget
         self.number_of_clicks = number_of_clicks  # function
-        self.click_value = click_value
 
     # x is arm, aka, budget index.
     def n(self, x, arm):
@@ -17,22 +16,21 @@ class SubcampaignDP:
         elif arm > self.max_budget:
             return n_inf
         else:
-            return self.number_of_clicks[x] * self.click_value
+            return self.number_of_clicks[x]
 
 
 class DPAlgorithm:
-    def __init__(self, arms, n_subcampaigns, num_clicks, min_budgets, max_budgets, click_values):
+    def __init__(self, arms, n_subcampaigns, num_clicks, min_budgets, max_budgets):
         self.arms = arms
         self.n_subcampaigns = n_subcampaigns
         self.num_clicks = num_clicks
         self.min_budgets = min_budgets
         self.max_budgets = max_budgets
-        self.click_values = click_values
 
         self.campaigns = []
         for i, (min_budget, max_budget, num_click) in enumerate(
                 zip(self.min_budgets, self.max_budgets, self.num_clicks)):
-            self.campaigns.append(SubcampaignDP(min_budget, max_budget, num_click, click_values[i]))
+            self.campaigns.append(SubcampaignDP(min_budget, max_budget, num_click))
 
     def get_budgets(self):
         subcampaigns = self.campaigns

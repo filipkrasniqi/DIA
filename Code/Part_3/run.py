@@ -43,7 +43,7 @@ def plot_regression(current_folder, arms, environment, idx_subcampaign, t, save_
 
     plt.xlabel("Budget [€]")
     plt.ylabel("Number of clicks")
-    plt.ylim((0, 3))
+    plt.ylim((0, max(real_function_y)))
     plt.legend(loc='lower right')
     plt.title("Subcampaign {}, t = {}".format(idx_subcampaign, t))
     plt.grid()
@@ -86,7 +86,7 @@ n_arms_sub = 21
 total_budget = 200
 min_budgets = [0, 0, 0, 0, 0]
 max_budgets = [120, 40, 30, 80, 80]
-click_values = [1, 2, 3, 4, 5]
+click_values = [1, 1.3, 1.6, 1.9, 2.2]
 T = 50
 
 # Folders to save images.
@@ -148,11 +148,9 @@ arms = env.get_arms()
 # Execute combinatorial algorithm to get optimal distribution of budgets to different subcampaigns.
 number_of_clicks = get_all_number_of_clicks(arms, env)
 perfect_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, number_of_clicks,
-                                           min_budgets=min_budgets, max_budgets=max_budgets, click_values=click_values).get_budgets()
+                                           min_budgets=min_budgets, max_budgets=max_budgets).get_budgets()
 # Get optimal value of clicks for the campaign (clairvoyant).
-optimum = perfect_combinatorial_result[0]
-
-# REAL ALGORITHM.
+optimum = perfect_combinatorial_result[0]# REAL ALGORITHM.
 
 rewards_per_round = list()
 regression_errors = list()
@@ -176,7 +174,7 @@ for t in range(1, T + 1):
     samples = pull_gpts_arms(gpts_learners)
     # Run the DP algorithm in order to get optimal distribution of budgets between subcampaigns.
     real_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, samples,
-                                            min_budgets=min_budgets, max_budgets=max_budgets, click_values=click_values).get_budgets()
+                                            min_budgets=min_budgets, max_budgets=max_budgets).get_budgets()
     # Array containing optimal allocation of budgets.
     arms_to_pull = real_combinatorial_result[1]
     # Total budget instantiated for the campaign.
