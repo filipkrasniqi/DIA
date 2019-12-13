@@ -79,13 +79,13 @@ user_probabilities = [
     [0.30, 0.65, 0.05]]
 
 # Prepare environment.
-sigma = 0.1
+sigma = 0.001
 n_subcampaigns = 5
 n_users_x_subcampaign = 3
 n_arms_sub = 21
 total_budget = 200
 min_budgets = [0, 0, 0, 0, 0]
-max_budgets = [total_budget, total_budget, total_budget, total_budget, total_budget]
+max_budgets = [120, 40, 30, 80, 80]
 min_daily_budget = 0.0
 max_daily_budget = total_budget
 T = 50
