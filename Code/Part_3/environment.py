@@ -44,7 +44,8 @@ class User:
 
 
 class Subcampaign:
-    def __init__(self, n_arms, n_users, user_probabilities, min_budget, max_budget, sigma, idx, bids, slopes, max_clicks):
+    def __init__(self, n_arms, n_users, user_probabilities, min_budget, max_budget,
+                 sigma, idx, bids, slopes, max_clicks, click_value):
         self.n_arms = n_arms
         self.n_users = n_users
         # One probability for each user.
@@ -57,6 +58,7 @@ class Subcampaign:
         self.sigma = sigma
         self.users = list()
         self.idx = idx
+        self.click_value = click_value
         self.users_in_batch = [0, 0, 0]
         self.generate()
 
@@ -120,7 +122,7 @@ class Subcampaign:
 class Environment:
 
     def __init__(self, n_arms, n_users, n_subcampaigns, min_budgets, max_budgets, total_budget, user_probabilities, sigma, bids, slopes,
-                 max_clicks):
+                 max_clicks, click_values):
         self.n_arms = n_arms
         self.n_users = n_users
         self.n_subcampaigns = n_subcampaigns
@@ -129,6 +131,7 @@ class Environment:
         self.total_budget = total_budget
         self.user_probabilities = user_probabilities
         self.sigma = sigma
+        self.click_values = click_values
         self.subcampaigns = list()
 
         for idx_subcampaign in range(0, n_subcampaigns):
@@ -142,7 +145,8 @@ class Environment:
                 slopes=slopes[idx_subcampaign],
                 sigma=self.sigma,
                 idx=idx_subcampaign,
-                max_clicks=max_clicks[idx_subcampaign])
+                max_clicks=max_clicks[idx_subcampaign],
+                click_value=click_values[idx_subcampaign])
             self.subcampaigns.append(new_subcampaign)
 
     def get_new_batch(self):
@@ -154,10 +158,12 @@ class Environment:
         return arms
 
     def get_rewards(self, budget, idx_subcampaign):
-        return self.subcampaigns[idx_subcampaign].get_clicks_noise(budget)
+        subcampaign = self.subcampaigns[idx_subcampaign]
+        return subcampaign.get_clicks_noise(budget) * subcampaign.click_value
 
     def get_clicks_real(self, budget, idx_subcampaign):
-        return self.subcampaigns[idx_subcampaign].get_clicks_real(budget)
+        subcampaign = self.subcampaigns[idx_subcampaign]
+        return subcampaign.get_clicks_real(budget) * subcampaign.click_value
 
     def plot(self):
         """
