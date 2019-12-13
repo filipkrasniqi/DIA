@@ -39,8 +39,8 @@ def plot_regression(current_folder, arms, environment, idx_subcampaign, t, save_
              alpha=0.5, fc='b', ec='None', label='95% conf interval')
 
     plt.xlabel("Budget [€]")
-    plt.ylabel("Number of clicks")
-    plt.ylim((0, max(real_function_y)))
+    plt.ylabel("Reward")
+    plt.ylim((0, max(real_function_y) * max(environment.click_values)))
     plt.legend(loc='lower right')
     plt.title("Subcampaign {}, t = {}".format(idx_subcampaign, t))
     plt.grid()
