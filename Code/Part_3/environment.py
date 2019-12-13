@@ -21,13 +21,14 @@ class User:
         self.click_value_subcampaign = click_value_subcampaign
 
     def get_clicks_real(self, bid):
-        return max(self.max_clicks_subcampaign * (1 - np.exp(-self.slope * (bid - self.bid))), 0) * self.click_value_subcampaign
+        clicks = max(self.max_clicks_subcampaign * (1 - np.exp(-self.slope * (bid - self.bid))), 0)
+        return round(clicks * self.click_value_subcampaign, 3)
 
     def get_clicks_noise(self, bid):
         y = self.get_clicks_real(bid)
         mu, sigma = 0, self.sigma
         noise = np.random.normal(mu, sigma)
-        return max(0, y + noise)
+        return round(max(0, y + noise), 3)
 
     def plot(self, idx_subcampaign):
         x = np.linspace(0, self.max_budget, 100)
@@ -96,13 +97,13 @@ class Subcampaign:
         number_of_clicks = 0
         for idx, user in enumerate(self.users):
             number_of_clicks += user.get_clicks_real(bid) * self.users_in_batch[idx]
-        return number_of_clicks / BATCH_SIZE
+        return round(number_of_clicks / BATCH_SIZE, 3)
 
     def get_clicks_noise(self, bid):
         y = self.get_clicks_real(bid)
         mu, sigma = 0, self.sigma
         sample = np.random.normal(mu, sigma)
-        return max(0, y + sample)
+        return round(max(0, y + sample), 3)
 
     def plot(self):
         for user in self.users:

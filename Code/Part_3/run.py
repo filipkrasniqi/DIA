@@ -1,14 +1,11 @@
-from Code.learners.GPTS_Learner import *
-from Code.Part_3.environment import *
-from Code.Part_3.dp_algorithm import *
-
-import matplotlib.pyplot as plt
-import numpy as np
+import math
 import os
-import itertools
 import time
-
 import warnings
+
+from Code.Part_3.dp_algorithm import *
+from Code.Part_3.environment import *
+from Code.learners.GPTS_Learner import *
 
 warnings.filterwarnings("ignore")
 
@@ -79,15 +76,15 @@ user_probabilities = [
     [0.30, 0.65, 0.05]]
 
 # Prepare environment.
-sigma = 0.001
+T = 200
+sigma = 0.1
 n_subcampaigns = 5
 n_users_x_subcampaign = 3
-n_arms_sub = 21
+n_arms = math.ceil(math.pow(T * math.log(T, 10), 0.25))
 total_budget = 200
 min_budgets = [0, 0, 0, 0, 0]
-max_budgets = [120, 40, 30, 80, 80]
+max_budgets = [200, 200, 200, 200, 200]
 click_values = [1, 1.3, 1.6, 1.9, 2.2]
-T = 50
 
 # Folders to save images.
 curr_dir = os.getcwd()
@@ -128,7 +125,7 @@ if not os.path.exists(cur_fold):
     os.mkdir(cur_fold)
 
 env = Environment(
-    n_arms=n_arms_sub,
+    n_arms=n_arms,
     n_users=n_users_x_subcampaign,
     n_subcampaigns=n_subcampaigns,
     min_budgets=min_budgets,
@@ -150,7 +147,9 @@ number_of_clicks = get_all_number_of_clicks(arms, env)
 perfect_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, number_of_clicks,
                                            min_budgets=min_budgets, max_budgets=max_budgets).get_budgets()
 # Get optimal value of clicks for the campaign (clairvoyant).
-optimum = perfect_combinatorial_result[0]# REAL ALGORITHM.
+optimum = perfect_combinatorial_result[0]
+
+# REAL ALGORITHM.
 
 rewards_per_round = list()
 regression_errors = list()
@@ -181,8 +180,7 @@ for t in range(1, T + 1):
     instantiated_budget = np.sum(arms_to_pull)
 
     # Get real number of clicks from a subcampaign for a certain budget.
-    real_rewards = [env.get_clicks_real(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in
-                    enumerate(arms_to_pull)]
+    real_rewards = [number_of_clicks[idx_subcampaign][arms.tolist().index(arm)] for idx_subcampaign, arm in enumerate(arms_to_pull)]
     # Pull arms and get the rewards (number of clicks with noise).
     noisy_rewards = [env.get_rewards(budget=arm, idx_subcampaign=idx_subcampaign) for idx_subcampaign, arm in
                      enumerate(arms_to_pull)]
@@ -210,7 +208,8 @@ for t in range(1, T + 1):
             pass
 
     rewards_per_round.append(np.sum(real_rewards))
-    regret = abs(optimum - np.sum(real_rewards))
+    total_reward = np.sum(real_rewards)
+    regret = abs(optimum - total_reward)
     regrets.append(regret)
     cumulative_regrets.append(sum(regrets))
 
