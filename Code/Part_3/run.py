@@ -128,9 +128,6 @@ cur_fold = env_dir
 if not os.path.exists(cur_fold):
     os.mkdir(cur_fold)
 
-gpts_rewards_per_experiment_sub_1 = list()
-gaussian_error_per_experiment_1 = list()
-
 env = Environment(
     n_arms=n_arms_sub,
     n_users=n_users_x_subcampaign,
@@ -159,6 +156,7 @@ optimum = perfect_combinatorial_result[0]
 rewards_per_round = list()
 regression_errors = list()
 regrets = list()
+cumulative_regrets = list()
 avg_regression_errors = list()
 arm_obs = np.array(list())
 
@@ -214,6 +212,7 @@ for t in range(1, T + 1):
     rewards_per_round.append(np.sum(real_rewards))
     regret = abs(optimum - np.sum(real_rewards))
     regrets.append(regret)
+    cumulative_regrets.append(sum(regrets))
 
     # Print time necessary for 10 epochs.
     if t % 10 == 0:
@@ -243,7 +242,7 @@ plt.show()
 plt.figure(0)
 plt.xlabel("t")
 plt.ylabel("Cumulative Regret")
-plot1 = np.cumsum(optimum - rewards_per_round)
+plot1 = cumulative_regrets
 plt.plot(plot1, 'r')
 # save log in file
 plt.savefig(cur_fold + '/cumreg.png')
