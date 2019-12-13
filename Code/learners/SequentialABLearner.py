@@ -16,12 +16,12 @@ and are related to each arm.
 
 class SequentialABLearner(Learner):
 
-    def __init__(self, arms, idx_c, idx_s, sigma, window=None):
+    def __init__(self, arms, idx_c, idx_s, sigma, batch_size, window=None):
         name_learner = "Sequential AB"
         if window is not None:
             name_learner += " with window {}".format(window)
-        Learner.__init__(self, arms, idx_c=idx_c, idx_s=idx_s, name_learner=name_learner, sigma=sigma)
-        self.t_start_exploit = 14
+        Learner.__init__(self, arms, batch_size=batch_size, idx_c=idx_c, idx_s=idx_s, name_learner=name_learner, sigma=sigma)
+        self.t_start_exploit = 28
         self.min_confidence = 0.95
         self.average_rewards = [0 for _ in range(self.n_arms)]
         self.rewards_variance = [0 for _ in range(self.n_arms)]
@@ -29,13 +29,11 @@ class SequentialABLearner(Learner):
     '''
     Update values of Learner (update observations) and average + variance
     '''
-
-    def update(self, pulled_arm, reward, demand, user):
-        self.update_observations(pulled_arm, reward, demand, user)
-        n = len(self.rewards_per_arm[pulled_arm])
-        self.average_rewards[pulled_arm] = np.sum(self.rewards_per_arm[pulled_arm]) / n
-        self.rewards_variance[pulled_arm] = np.sum(
-            [(reward - self.average_rewards[pulled_arm]) ** 2 for reward in self.rewards_per_arm[pulled_arm]]) / n
+    def update(self, idx_arm):
+        n = len(self.rewards_per_arm[idx_arm])
+        self.average_rewards[idx_arm] = np.sum(self.rewards_per_arm[idx_arm]) / n
+        self.rewards_variance[idx_arm] = np.sum(
+            [(reward - self.average_rewards[idx_arm]) ** 2 for reward in self.rewards_per_arm[idx_arm]]) / (n - 1)
 
     '''
     Returns average values for arm
@@ -72,13 +70,12 @@ class SequentialABLearner(Learner):
     '''
     Selection of arm in AB learner: if t is before the threshold, random choice, otherwise pulling so far best solution
     '''
-
-    def pull_arm(self, rewards_per_arm, demands_per_arm, user, t):
-        if t < self.t_start_exploit:
+    def best_arm(self):
+        if self.t < self.t_start_exploit:
             idx_arm = np.random.choice(list(range(self.n_arms)), 1)[0]
         else:
             idx_arm = self.best_candidate()
-        return Learner.pull_arm(self, rewards_per_arm, demands_per_arm, user, t, idx_arm)
+        return idx_arm
 
     '''
     Finds best candidate between the two choices

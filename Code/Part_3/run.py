@@ -99,14 +99,16 @@ user_probabilities = [
     [0.30, 0.65, 0.05]]
 
 # Prepare environment.
-sigma = 0.1
+sigma = 0.001
 n_subcampaigns = 5
 n_users_x_subcampaign = 3
 n_arms_sub = 21
-total_budget = 100
+total_budget = 200
+min_budgets = [0, 0, 0, 0, 0]
+max_budgets = [120, 40, 30, 80, 80]
 min_daily_budget = 0.0
 max_daily_budget = total_budget
-T = 366
+T = 50
 
 # Folders to save images.
 curr_dir = os.getcwd()
@@ -153,7 +155,9 @@ env = Environment(
     n_arms=n_arms_sub,
     n_users=n_users_x_subcampaign,
     n_subcampaigns=n_subcampaigns,
-    max_budget=total_budget,
+    min_budgets=min_budgets,
+    max_budgets=max_budgets,
+    total_budget=total_budget,
     user_probabilities=user_probabilities,
     sigma=sigma,
     bids=bids,
@@ -166,7 +170,7 @@ env.plot()
 
 # Execute combinatorial algorithm to get optimal distribution of budgets to different subcampaigns.
 number_of_clicks = get_all_number_of_clicks(arms, env)
-perfect_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, number_of_clicks, min_daily_budget, total_budget).get_budgets()
+perfect_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, number_of_clicks, min_budgets=min_budgets, max_budgets=max_budgets).get_budgets()
 # Get optimal value of clicks for the campaign (clairvoyant).
 optimum = perfect_combinatorial_result[0]
 
@@ -188,7 +192,7 @@ for t in range(1, T + 1):
     # Sample all the learners.
     samples = pull_gpts_arms(gpts_learners)
     # Run the DP algorithm in order to get optimal distribution of budgets between subcampaigns.
-    real_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, samples, min_daily_budget, total_budget).get_budgets()
+    real_combinatorial_result = DPAlgorithm(arms, n_subcampaigns, samples, min_budgets=min_budgets, max_budgets=max_budgets).get_budgets()
     # Array containing optimal allocation of budgets.
     arms_to_pull = real_combinatorial_result[1]
     # Total budget instantiated for the campaign.
@@ -247,7 +251,7 @@ plt.ylabel("Regret")
 plot1 = regrets
 plt.plot(plot1, 'r')
 # save log in file
-plt.savefig(cur_fold + '/cumreg.png')
+plt.savefig(cur_fold + '/reg.png')
 plt.show()
 
 # PLOT CUMULATIVE REGRET.

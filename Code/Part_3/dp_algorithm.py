@@ -10,22 +10,22 @@ class SubcampaignDP:
         self.number_of_clicks = number_of_clicks  # function
 
     # x is arm, aka, budget index.
-    def n(self, x):
-        if x < self.min_budget:
+    def n(self, x, arm):
+        if arm < self.min_budget:
             return n_inf
-        elif x > self.max_budget:
+        elif arm > self.max_budget:
             return n_inf
         else:
             return self.number_of_clicks[x]
 
 
 class DPAlgorithm:
-    def __init__(self, arms, n_subcampaigns, num_clicks, min_budget, max_budget):
+    def __init__(self, arms, n_subcampaigns, num_clicks, min_budgets, max_budgets):
         self.arms = arms
         self.n_subcampaigns = n_subcampaigns
         self.num_clicks = num_clicks
-        self.min_budgets = [min_budget for _ in range(0, n_subcampaigns)]
-        self.max_budgets = [max_budget for _ in range(0, n_subcampaigns)]
+        self.min_budgets = min_budgets
+        self.max_budgets = max_budgets
 
         self.campaigns = []
         for i, (min_budget, max_budget, num_click) in enumerate(
@@ -36,13 +36,11 @@ class DPAlgorithm:
         subcampaigns = self.campaigns
         budgets = self.arms
         init_table = np.zeros(shape=(len(subcampaigns), len(budgets)))
-        index_s = 0
-        for s in subcampaigns:
+        for idx_s, s in enumerate(subcampaigns):
             row = []
-            for arm, b in enumerate(budgets):
-                row.append(s.n(arm))
-            init_table[index_s] = row
-            index_s = index_s + 1
+            for idx_arm, arm in enumerate(budgets):
+                row.append(s.n(idx_arm, arm))
+            init_table[idx_s] = row
 
         table_result = np.array([])
         previous_row = np.zeros(len(budgets))
@@ -51,29 +49,25 @@ class DPAlgorithm:
         # need to take trace of pairs (i,j) for each subcampaign, s.t. i is the previous row, j is the current value in the dp algorithm
         # this matrix allows to compute how budget are instantiated in the maximum allocation
         pairs_previous_current_for_subcampaign = []
-        for s in subcampaigns:
-            index_b = 0
+        for idx_s, s in enumerate(subcampaigns):
             results = np.array([])  # array representing solution when adding subcampaign s
-            for b in budgets:
+            for index_b, b in enumerate(budgets):
                 combination_indices = []
                 # when I am in subcampaign s, I have previous row containing the best allocation for each budget value
                 # fill array of choices of budget for pair (s, b). A choice is to be considered if budget
                 choices = np.array([])
-                if b > s.max_budget:
-                    choices = np.append(choices, n_inf)
-                else:
-                    # selezionare gli indici di previous_row che sono sotto a budget
-                    filtered_choices_pr = previous_row[
-                                          0:index_b + 1]  # lista temporanea contenente i casi di previous_row che sono associati ad un budget
-                    # selezionare per ogni valore di filtered_choices_pr l'associato della riga della subcampaign
-                    for i in range(0, len(filtered_choices_pr)):
-                        num_click_pr = previous_row[i]
-                        # find index for associated complementary budget
-                        j = np.where(budgets + budgets[i] == b)
-                        j = j[0][0]
-                        current_num_click_s = init_table[index_s][j]
-                        choices = np.append(choices, current_num_click_s + num_click_pr)
-                        combination_indices.append((i, j))
+                # selezionare gli indici di previous_row che sono sotto a budget
+                filtered_choices_pr = previous_row[
+                                      0:index_b + 1]  # lista temporanea contenente i casi di previous_row che sono associati ad un budget
+                # selezionare per ogni valore di filtered_choices_pr l'associato della riga della subcampaign
+                for i in range(0, len(filtered_choices_pr)):
+                    num_click_pr = previous_row[i]
+                    # find index for associated complementary budget
+                    j = np.where(budgets + budgets[i] == b)
+                    j = j[0][0]
+                    current_num_click_s = init_table[index_s][j]
+                    choices = np.append(choices, current_num_click_s + num_click_pr)
+                    combination_indices.append((i, j))
 
                 # find maximum
                 max_val = np.amax(choices)
@@ -85,7 +79,6 @@ class DPAlgorithm:
                 pairs_previous_current_for_subcampaign.append(val[0])
                 pairs_previous_current_for_subcampaign.append(val[1])
                 results = np.append(results, max_val)
-                index_b = index_b + 1
 
             # table_result = np.put(table_result, index_s, results)
             table_result = np.concatenate((table_result, results), axis=0)

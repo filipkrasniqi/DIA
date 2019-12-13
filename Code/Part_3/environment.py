@@ -44,11 +44,12 @@ class User:
 
 
 class Subcampaign:
-    def __init__(self, n_arms, n_users, user_probabilities, max_budget, sigma, idx, bids, slopes, max_clicks):
+    def __init__(self, n_arms, n_users, user_probabilities, min_budget, max_budget, sigma, idx, bids, slopes, max_clicks):
         self.n_arms = n_arms
         self.n_users = n_users
         # One probability for each user.
         self.user_probabilities = user_probabilities
+        self.min_budget = min_budget
         self.max_budget = max_budget
         self.max_clicks = max_clicks
         self.bids = bids
@@ -118,12 +119,14 @@ class Subcampaign:
 
 class Environment:
 
-    def __init__(self, n_arms, n_users, n_subcampaigns, max_budget, user_probabilities, sigma, bids, slopes,
+    def __init__(self, n_arms, n_users, n_subcampaigns, min_budgets, max_budgets, total_budget, user_probabilities, sigma, bids, slopes,
                  max_clicks):
         self.n_arms = n_arms
         self.n_users = n_users
         self.n_subcampaigns = n_subcampaigns
-        self.max_budget = max_budget
+        self.min_budgets = min_budgets
+        self.max_budgets = max_budgets
+        self.total_budget = total_budget
         self.user_probabilities = user_probabilities
         self.sigma = sigma
         self.subcampaigns = list()
@@ -133,7 +136,8 @@ class Environment:
                 n_arms=self.n_arms,
                 n_users=self.n_users,
                 user_probabilities=self.user_probabilities[idx_subcampaign],
-                max_budget=self.max_budget,
+                min_budget=self.min_budgets[idx_subcampaign],
+                max_budget=self.max_budgets[idx_subcampaign],
                 bids=bids[idx_subcampaign],
                 slopes=slopes[idx_subcampaign],
                 sigma=self.sigma,
@@ -146,7 +150,7 @@ class Environment:
             subcampaign.get_new_batch()
 
     def get_arms(self):
-        arms = np.linspace(0, self.max_budget, self.n_arms)
+        arms = np.linspace(0, self.total_budget, self.n_arms)
         return arms
 
     def get_rewards(self, budget, idx_subcampaign):
