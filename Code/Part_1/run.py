@@ -100,11 +100,11 @@ do_TS = False
 
 coeff_window_length = 1
 window_length = int(coeff_window_length * math.pow(horizon, 0.5)) + 10
-do_UCB_wdw = False
-do_TS_wdw = True
+do_UCB_wdw = True
+do_TS_wdw = False
 plot_env = False
 plot_single_user = False
-plot_context = False
+plot_aggregate = False
 
 def num_users(idx, t):
     t_in_season, season = (t % season_length) + 1, int((t % 365) / season_length)
@@ -127,9 +127,9 @@ def train_context(learner_constructor, context_alternatives, window_length=None)
         env_best_contexts = [env.get_current_best_context(1)]
         if plot_single_user:
             env.plot_single_users(True, horizon)
-            # env.plot_contexts()
             env.plot_distribution()
-            err
+        if plot_aggregate:
+            env.plot_aggregate()
         for t in range(1, horizon + 1):
             # take set of rewards for each context. This allows to call round_context only once.
             # From round_context, rewards and demands are returned for each context, and are the set of rewards and demands
@@ -180,7 +180,7 @@ def train_context(learner_constructor, context_alternatives, window_length=None)
 
 all_plots = {}
 # Without context
-do_without_context = False
+do_without_context = True
 entire_plots = {"sigma": sigma_env_n}
 
 single_context_alternatives = [[[0, 1, 2]]]
@@ -219,7 +219,7 @@ if do_without_context:
 
     pickle.dump(entire_plots, open("{}/results.pickle".format(env_dir), 'wb'))
 
-do_with_context = True
+do_with_context = False
 # With context
 
 entire_plots_context = {"sigma": sigma_env_n}

@@ -9,7 +9,7 @@ import os
 
 curr_dir = os.getcwd()
 outputs_dir = curr_dir+"/outputs/"
-env_dir = outputs_dir+"CXG_TS_WDW_v1/" # v01_without_context_T363
+env_dir = outputs_dir+"sw_ucb_v3/"
 
 import pandas as pd
 
@@ -303,6 +303,67 @@ class ProjectEnvironment(Environment):
 
         g = sns.FacetGrid(df, size=10, row="Season", col="Time", legend_out=True)
         g = g.map(sns.countplot, "Class")
+        plt.show()
+
+    def plot_aggregate(self, t_vals = [0, 91, 182, 273]):
+        arms_df, season_df, season_even_df, season_odd_df, t_df, demands_df, rewards_df = [], [], [], [], [], [], []
+
+        for idx_t, t in enumerate(t_vals):
+            for arm in self.arms:
+                demand_tot, reward_tot = 0, 0
+                idx_context = 0
+
+                sub_contexts_for_current_context = self.contexts[idx_context]
+                sub_contexts_alternatives_for_current_context = self.contexts_alternatives[idx_context]
+                probabilities = self.probabilities(t)
+
+                for idx_s, subcontext in enumerate(sub_contexts_alternatives_for_current_context):
+                    demand = sub_contexts_for_current_context[idx_s].weighted_aggregate_demand(arm, probabilities, t)
+                    current_real_reward = demand * arm
+
+                    users_current_subcontext = sub_contexts_alternatives_for_current_context[idx_s]
+                    probability_current_subcontext = np.sum(
+                        [p for u, p in enumerate(probabilities) if u in users_current_subcontext])
+
+                    reward_tot += current_real_reward * probability_current_subcontext
+                    demand_tot += demand * probability_current_subcontext
+
+                arms_df.append(arm)
+                t_df.append(t % self.season_length)
+                season = self.season(t)
+                if season == 0:
+                    row, column = 0, 0
+                if season == 1:
+                    row, column = 0, 1
+                if season == 2:
+                    row, column = 1, 0
+                if season == 3:
+                    row, column = 1, 1
+                season_df.append(season)
+                season_even_df.append(row)
+                season_odd_df.append(column)
+                demands_df.append(demand_tot)
+                rewards_df.append(reward_tot)
+
+        df = pd.DataFrame(columns=["Demand", "Reward", "Time", "Season", "Price", "idx_context", "row", "column"],
+                          data={"Demand": demands_df, "Reward": rewards_df, "row": season_even_df, "column": season_odd_df, "Season": season_df, "Time": t_df,
+                                "Price": arms_df})
+
+        colors_palette = [User.hue_map((t + 1) / 363) for t in t_vals]
+        palette = {
+            t: colors_palette[idx_t] for idx_t, t in enumerate(t_vals)
+        }
+
+        g = sns.FacetGrid(df, size=10, col="column", row="row")
+        g = g.map(sns.lineplot, "Price", "Reward")
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.show()
+
+        g = sns.FacetGrid(df, size=10, col="column", row="row")
+        g = g.map(sns.lineplot, "Price", "Demand")
+        # sns.lineplot(data = current_df, x="Bins", y="Demand", palette=palette)
+        # plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.show()
 
     def plot_contexts(self):
