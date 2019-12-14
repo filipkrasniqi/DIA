@@ -18,7 +18,7 @@ class GPTSLearner:
             kernel=kernel,
             alpha=1e-10,
             normalize_y=True,
-            n_restarts_optimizer=5,
+            n_restarts_optimizer=3,
             random_state=17)
 
     def update(self, idx_pulled_arm, reward):
@@ -35,8 +35,5 @@ class GPTSLearner:
         self.means = np.maximum(self.means, 0)
 
     def sample_arms(self):
-        values = np.random.normal(self.means,self.sigmas)
+        values = np.round(self.gp.sample_y(np.atleast_2d(self.arms).T), 3)
         return np.where(values > 0, values, 0)
-
-        #values = self.gp.sample_y(np.atleast_2d(self.arms).T)
-        #return np.where(values > 0, values, 0)
