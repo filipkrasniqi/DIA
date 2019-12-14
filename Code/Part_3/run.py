@@ -76,14 +76,14 @@ user_probabilities = [
     [0.30, 0.65, 0.05]]
 
 # Prepare environment.
-T = 200
-sigma = 0.1
+T = 400
+sigma = 0.4
 n_subcampaigns = 5
 n_users_x_subcampaign = 3
-n_arms = math.ceil(math.pow(T * math.log(T, 10), 0.25))
+n_arms = 21 #math.ceil(math.pow(T * math.log(T, 10), 0.25))
 total_budget = 200
 min_budgets = [0, 0, 0, 0, 0]
-max_budgets = [200, 200, 200, 200, 200]
+max_budgets = [200, 200, 140, 80, 200]
 click_values = [1, 1.3, 1.6, 1.9, 2.2]
 
 # Folders to save images.
@@ -138,7 +138,7 @@ env = Environment(
     max_clicks=max_clicks,
     click_values=click_values)
 arms = env.get_arms()
-# env.plot()
+env.plot()
 
 # CLAIRVOYANT ALGORITHM.
 
